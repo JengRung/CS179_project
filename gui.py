@@ -1,8 +1,9 @@
 import sys
 from PySide2.QtWidgets import QApplication, QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget, QStackedWidget, QLineEdit
-from PySide2.QtCore import Qt, QTimer
+from PySide2.QtCore import Qt, QTimer, QPropertyAnimation, QRect
 import os
 from tkinter import filedialog as fd
+import numpy as np
 
 FILE_NAME = ""
 USERNAME = ""
@@ -18,15 +19,20 @@ class MainPage(QWidget):
         self.setLayout(layout)
         
         # Add a label to the layout
-        label = QLabel('Welcome to the the APP!')
+        label = QLabel('Welcome, please select a task!')
         label.setAlignment(Qt.AlignCenter)
         layout.addWidget(label)
         
-        # Add a button to start the game
-        start_button = QPushButton('Start')
-        start_button.setMaximumSize(150, 50)
-        start_button.clicked.connect(self.start_app)
-        layout.addWidget(start_button)
+
+        balance_button = QPushButton('Balance Task')
+        balance_button.setMaximumSize(150, 50)
+        balance_button.clicked.connect(self.start_balance)
+        layout.addWidget(balance_button)
+
+        transfer_button = QPushButton('Transfer Task')
+        transfer_button.setMaximumSize(150, 50)
+        transfer_button.clicked.connect(self.start_transfer)
+        layout.addWidget(transfer_button)
 
         # Add a button to select file
         file_button = QPushButton('Select File')
@@ -40,13 +46,19 @@ class MainPage(QWidget):
         login_button.clicked.connect(self.login)
         layout.addWidget(login_button)
 
-    def start_app(self):
+    #[:+]-- changed 'start_app' to start balance, also added 'start_transfer;  one func
+    def start_balance(self):
         # Create the block grid and add it to the stacked widget
         block_size = 96
         grid = BlockGrid(12, 9, block_size)
         self.canvas.addWidget(grid)
+        self.canvas.setCurrentWidget(grid)
 
-        # Switch to the game widget
+    def start_transfer(self):
+        block_size = 64
+        sizer= 1.5
+        grid = TransferGrid(12, 9, 24, 4, block_size*sizer)
+        self.canvas.addWidget(grid)
         self.canvas.setCurrentWidget(grid)
 
     def select_file(self):
@@ -57,14 +69,13 @@ class MainPage(QWidget):
     def login(self):
         self.canvas.setCurrentIndex(1) 
 
+#[+:]-- BalanceGrid == BlockGrid
 class BlockGrid(QWidget):
     def __init__(self, rows, cols, block_size, parent=None):
         super().__init__(parent)
         
-        # Set a custon start and end block for testing
-        # x=4, y=1
+        # Set a custon start and end block for testing, formate: (x,y)
         self._start_block = (4,5)
-        # x=9, y=3
         self._end_block = (9,3)
         
         # 2 coordinates to track the path block
@@ -75,12 +86,11 @@ class BlockGrid(QWidget):
         animation_page_layout = QHBoxLayout()
         self.setLayout(animation_page_layout)
 
-        # Create a grid layout to hold the blocks
+
         grid_layout = QGridLayout()
         grid_layout.setSpacing(0)
         animation_page_layout.addLayout(grid_layout)
-        
-        # Add the blocks to the grid layout
+
         for row in range(rows):
             for col in range(cols):
                 label = QLabel()
@@ -99,18 +109,16 @@ class BlockGrid(QWidget):
                 grid_layout.addWidget(label, col, row)
                 
         
-        # Add button to the layout
+
         button = QPushButton('Next')
         animation_page_layout.addWidget(button, 2)
         
         self.setFixedSize(12 * block_size + 200, 9 * block_size)
-                
-        # Create a QTimer to update the labels every second
+
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_labels)
         self.timer.start(1000)
 
-    # Update the labels
     def update_labels(self):
         # print(self._track_block_x, self._track_block_y)
         
@@ -131,8 +139,7 @@ class BlockGrid(QWidget):
                 elif (row + 1, 9 - col) == self._end_block:
                     block_style += 'background-color: red;'
                 label.setStyleSheet(block_style)
-        
-        # Otherwise, update the path block
+
         else:
             if self._track_block_y != self._end_block[1]:
                 if self._track_block_y < self._end_block[1]:
@@ -151,6 +158,109 @@ class BlockGrid(QWidget):
                 col = label.property('col')
                 if (row + 1, 9 - col) == (self._track_block_x, self._track_block_y):
                     label.setStyleSheet('border: 1px solid black; background-color: red;')
+
+
+#[+:]--
+class TransferGrid(QWidget):
+    def __init__(self, mainRows, mainCols, buffRows, buffCols,  block_size, parent=None):
+        super().__init__()
+        self.clk= 0
+        self.clkLim= 200
+        self.mainStartPt = (0,0)
+        self.mainEndPt = (4,4)
+        self.mainMidPt = (self.mainEndPt[0], self.mainStartPt[1])
+        self.buffStartPt = (0,0)
+        self.buffEndPt = (4,4)
+        self.buffMidPt = (self.buffEndPt[0], self.buffStartPt[1])
+        buffGrid = QGridLayout()
+        buffGrid.setSpacing(5)
+        for row in range(buffRows):
+            for col in range(buffCols):
+                #[+]-- cells are labled by coordinates, should change to weight later
+                # label = QLabel("({0},{1})".format(row, col))
+                # label.setAlignment(Qt.AlignCenter)
+
+                #[+]-- the labels are the colored boxes the represent the containers
+                box = QLabel("({0},{1})".format(row, col))
+                box.setAlignment(Qt.AlignCenter)
+                box.setFixedSize(block_size, block_size)
+                box.setProperty('row', row)
+                box.setProperty('col', col)
+                blockStyle = 'border: 7px solid black; '
+                
+
+                if (row , col) == self.buffStartPt:
+                    blockStyle += 'background-color: yellow;'
+                elif (row, col) == self.buffEndPt:
+                    blockStyle += 'background-color: purple;'
+                    
+                box.setStyleSheet(blockStyle)
+                buffGrid.addWidget(box, col, row)
+                # buffGrid.addWidget(label, col, row)
+                
+        mainGrid = QGridLayout()
+        mainGrid.setSpacing(5)
+        for row in range(mainRows):
+            for col in range(mainCols):
+                box = QLabel("({0},{1})".format(row, col))
+                box.setAlignment(Qt.AlignCenter)
+                box.setFixedSize(block_size, block_size)
+                box.setProperty('row', row)
+                box.setProperty('col', col)
+                blockStyle = 'border: 7px solid black; '
+
+                if (row , col) == self.mainStartPt:
+                    blockStyle += 'background-color: cyan;'
+                elif (row, col) == self.mainEndPt:
+                    blockStyle += 'background-color: red;'
+                    
+                box.setStyleSheet(blockStyle)
+                mainGrid.addWidget(box, col, row)
+
+
+        transGrid = QGridLayout()
+        transGrid.addLayout(mainGrid, 0, 0)
+        transGrid.addLayout(buffGrid, 0, 1)
+        self.setLayout(transGrid)
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update)
+        self.timer.start(self.clkLim)
+    def update(self):
+        self.clk+=1
+        if self.clk>8: self.clk=1
+        curBoxMain= self.mainStartPt
+        # print(self.clk)
+        for box in self.findChildren(QLabel):
+            row = box.property('row')
+            col = box.property('col')
+            # #[+]-- the labels are the colored boxes the represent the containers
+            # box = QLabel()
+            # box.setFixedSize(block_size, block_size)
+            # box.setProperty('row', row)
+            # box.setProperty('col', col)
+            blockStyle = 'border: 7px solid black; '
+            if (row , col) == self.buffStartPt:
+                blockStyle += 'background-color: yellow;'
+            elif (row, col) == self.buffEndPt:
+                blockStyle += 'background-color: purple'
+
+            elif (row)==self.mainEndPt[0]:
+                if (col+self.clk)<=self.mainEndPt[1]:
+                    blockStyle += 'background-color: magenta'
+            box.setStyleSheet(blockStyle)
+
+
+    
+
+
+
+
+
+
+      
+
+
 
 class LoginPage(QWidget):
     def __init__(self, canvas, parent=None):
@@ -199,17 +309,23 @@ class Canvas(QWidget):
         layout.addWidget(self.stacked_widget)
         self.setLayout(layout)
 
-        # Set the size of the window, 96 is the block size, y + 50 to give extra space
-        window_size = (16 * 96, 9 * 96 + 50)
+        sizer= 2.25
+        window_size = (16 * 96*sizer*1.1, 9 * 96*sizer + 50)
         self.setFixedSize(*window_size)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-
-    # Create the canvas widget
     canvas = Canvas()
-
-    # Show the window
     canvas.show()
-
     sys.exit(app.exec_())
+
+
+
+
+# [::] -- Todo --
+#     - [ ] Add page for the transfer task
+#     - [ ] User log comments
+#     - [ ] log file
+#     - [ ] manifest checkist for transfer task
+#     - [ ] display instructions for moving containers
+#     - [ ] reminder prompt
