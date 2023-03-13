@@ -56,7 +56,7 @@ class MainPage(QWidget):
 
     def start_transfer(self):
         block_size = 64
-        sizer= 1.5
+        sizer= 0.7
         grid = TransferGrid(12, 9, 24, 4, block_size*sizer)
         self.canvas.addWidget(grid)
         self.canvas.setCurrentWidget(grid)
@@ -165,7 +165,7 @@ class TransferGrid(QWidget):
     def __init__(self, mainRows, mainCols, buffRows, buffCols,  block_size, parent=None):
         super().__init__()
         self.clk= 0
-        self.clkLim= 200
+        self.clkLim= 100
         self.mainStartPt = (0,0)
         self.mainEndPt = (4,4)
         self.mainMidPt = (self.mainEndPt[0], self.mainStartPt[1])
