@@ -3,6 +3,7 @@ import copy
 import time
 import matplotlib.pyplot as plt
 import numpy as np
+import ship
 import container
 
 """
@@ -166,26 +167,3 @@ def search(problem,queing_function,trace):
             return (node,node.depth,max_que,i)
         nodes = queing_function(nodes,expand(node),node.depth,visited_nodes,trace)
     raise Exception("Search terminated in failure")
-
-
-def get_array(dimension):
-    #Gets a test from the user
-
-    testn = []
-    for i in range(int(dimension)):
-        temp = [int(i) for i in input(f"Please enter {dimension} values for row {i+1} seperated by spaces: ").split()]
-        testn.append(temp)
-    for i in range(len(testn)):
-        for j in range(len(testn)):
-            if testn[i][j] == 0:
-                testn[i][j] = pow(int(dimension),2)
-    return testn
-
-def generate_goal(dim):
-    goal = []
-    for i in range(dim):
-        temp = []
-        for j in range(dim):
-            temp.append(dim*i+j+1)
-        goal.append(temp)
-    return goal
