@@ -1,5 +1,7 @@
 import sys
-from PySide2.QtWidgets import QApplication, QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget, QStackedWidget, QLineEdit
+from PySide2.QtWidgets import QApplication, QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget, QStackedWidget, QLineEdit, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QRadioButton
+# import PySide2.QtWidgets
+from PySide2 import QtCore, QtGui, QtWidgets
 from PySide2.QtCore import Qt, QTimer, QPropertyAnimation, QRect
 import os
 from tkinter import filedialog as fd
@@ -7,6 +9,14 @@ import numpy as np
 
 FILE_NAME = ""
 USERNAME = ""
+
+
+
+indexTionary= {
+    'main': 0,
+    'login': 1,
+    'transfer': 2,
+}
 
 class MainPage(QWidget):
     def __init__(self, canvas, parent=None):
@@ -22,7 +32,6 @@ class MainPage(QWidget):
         label = QLabel('Welcome, please select a task!')
         label.setAlignment(Qt.AlignCenter)
         layout.addWidget(label)
-        
 
         balance_button = QPushButton('Balance Task')
         balance_button.setMaximumSize(150, 50)
@@ -55,11 +64,17 @@ class MainPage(QWidget):
         self.canvas.setCurrentWidget(grid)
 
     def start_transfer(self):
-        block_size = 64
-        sizer= 0.7
-        grid = TransferGrid(12, 9, 24, 4, block_size*sizer)
-        self.canvas.addWidget(grid)
-        self.canvas.setCurrentWidget(grid)
+        # block_size = 64
+        # sizer= 0.7
+        # grid = TransferGrid(12, 9, 24, 4, block_size*sizer)
+        # self.canvas.addWidget(grid)
+        # self.canvas.setCurrentWidget(grid)
+        
+        # transApp= QWidget()
+        # self.setCentralWidget(transApp)
+        # window= QVBoxLayout(transApp)
+
+        self.canvas.setCurrentIndex(indexTionary['transfer']) 
 
     def select_file(self):
         global FILE_NAME
@@ -71,6 +86,7 @@ class MainPage(QWidget):
 
 #[+:]-- BalanceGrid == BlockGrid
 class BlockGrid(QWidget):
+    # def __init__(self, rows, cols, block_size, parent=None):
     def __init__(self, rows, cols, block_size, parent=None):
         super().__init__(parent)
         
@@ -121,7 +137,6 @@ class BlockGrid(QWidget):
 
     def update_labels(self):
         # print(self._track_block_x, self._track_block_y)
-        
         # Finish one cycle of path, clear the lable and update again
         if self._track_block_x == self._end_block[0] and self._track_block_y == self._end_block[1]:
             print("Finish one cycle")
@@ -162,104 +177,73 @@ class BlockGrid(QWidget):
 
 #[+:]--
 class TransferGrid(QWidget):
-    def __init__(self, mainRows, mainCols, buffRows, buffCols,  block_size, parent=None):
-        super().__init__()
-        self.clk= 0
-        self.clkLim= 100
-        self.mainStartPt = (0,0)
-        self.mainEndPt = (4,4)
-        self.mainMidPt = (self.mainEndPt[0], self.mainStartPt[1])
-        self.buffStartPt = (0,0)
-        self.buffEndPt = (4,4)
-        self.buffMidPt = (self.buffEndPt[0], self.buffStartPt[1])
-        buffGrid = QGridLayout()
-        buffGrid.setSpacing(5)
-        for row in range(buffRows):
-            for col in range(buffCols):
-                #[+]-- cells are labled by coordinates, should change to weight later
-                # label = QLabel("({0},{1})".format(row, col))
-                # label.setAlignment(Qt.AlignCenter)
+    #---TOdo--:
+        #- [ ] Process input into numbers for output into algo
+        #- [ ] refactor for better readabilty
+        #- [ ] Parse manifest
+        #- [ ] Replace manifest list with checklist
+        
+    def __init__(self, canvas, parent=None):
+        super().__init__(parent)
+        self.canvas= canvas
+#-[:+:]===============================Transfer CheckList =========================================\\
 
-                #[+]-- the labels are the colored boxes the represent the containers
-                box = QLabel("({0},{1})".format(row, col))
-                box.setAlignment(Qt.AlignCenter)
-                box.setFixedSize(block_size, block_size)
-                box.setProperty('row', row)
-                box.setProperty('col', col)
-                blockStyle = 'border: 7px solid black; '
-                
+        #[::]-- Holds the two columns in a single box:---\\
+        #--[[load][unload]]--------------------------\\
+        colContainer = QtWidgets.QHBoxLayout(self)
+        loadCol= QVBoxLayout()
+        colContainer.addLayout(loadCol)
+        unloadCol_R= QVBoxLayout()
+        colContainer.addLayout(unloadCol_R)
 
-                if (row , col) == self.buffStartPt:
-                    blockStyle += 'background-color: yellow;'
-                elif (row, col) == self.buffEndPt:
-                    blockStyle += 'background-color: purple;'
-                    
-                box.setStyleSheet(blockStyle)
-                buffGrid.addWidget(box, col, row)
-                # buffGrid.addWidget(label, col, row)
-                
-        mainGrid = QGridLayout()
-        mainGrid.setSpacing(5)
-        for row in range(mainRows):
-            for col in range(mainCols):
-                box = QLabel("({0},{1})".format(row, col))
-                box.setAlignment(Qt.AlignCenter)
-                box.setFixedSize(block_size, block_size)
-                box.setProperty('row', row)
-                box.setProperty('col', col)
-                blockStyle = 'border: 7px solid black; '
-
-                if (row , col) == self.mainStartPt:
-                    blockStyle += 'background-color: cyan;'
-                elif (row, col) == self.mainEndPt:
-                    blockStyle += 'background-color: red;'
-                    
-                box.setStyleSheet(blockStyle)
-                mainGrid.addWidget(box, col, row)
+        #[+]:-- load column is for data entry--------------------------\\
+        #-----------------------------------\\
+        inputSect_L= QtWidgets.QHBoxLayout()
+        itemLabel = QLabel("Item Name:")
+        self.weightLabel = QLabel("Weight:")
+        self.inputName = QLineEdit()
+        self.inputWeight = QLineEdit()
+        loadBtn = QtWidgets.QPushButton("Load Item", self)
+        self.loadList= QtWidgets.QListWidget(self)
+        loadCol.addWidget(QLabel("Load Items"))
+        loadBtn.clicked.connect(self.add_thing)
+        inputSect_L.addWidget(itemLabel)
+        inputSect_L.addWidget(self.inputName)
+        inputSect_L.addWidget(self.weightLabel)
+        inputSect_L.addWidget(self.inputWeight)
+        inputSect_L.addWidget(loadBtn)
+        loadCol.addLayout(inputSect_L)
+        loadCol.addWidget(self.loadList)
 
 
-        transGrid = QGridLayout()
-        transGrid.addLayout(mainGrid, 0, 0)
-        transGrid.addLayout(buffGrid, 0, 1)
-        self.setLayout(transGrid)
-
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update)
-        self.timer.start(self.clkLim)
-    def update(self):
-        self.clk+=1
-        if self.clk>8: self.clk=1
-        curBoxMain= self.mainStartPt
-        # print(self.clk)
-        for box in self.findChildren(QLabel):
-            row = box.property('row')
-            col = box.property('col')
-            # #[+]-- the labels are the colored boxes the represent the containers
-            # box = QLabel()
-            # box.setFixedSize(block_size, block_size)
-            # box.setProperty('row', row)
-            # box.setProperty('col', col)
-            blockStyle = 'border: 7px solid black; '
-            if (row , col) == self.buffStartPt:
-                blockStyle += 'background-color: yellow;'
-            elif (row, col) == self.buffEndPt:
-                blockStyle += 'background-color: purple'
-
-            elif (row)==self.mainEndPt[0]:
-                if (col+self.clk)<=self.mainEndPt[1]:
-                    blockStyle += 'background-color: magenta'
-            box.setStyleSheet(blockStyle)
-
-
+        #[+]:-- unload column reads from the manifest and makes list--------\\
+        self.maniBtn = QtWidgets.QPushButton("Open Manifest", self)
+        self.manifestList= QtWidgets.QListWidget(self)
+        unloadCol_R.addWidget(QLabel("Unoad Items"))
+        self.maniBtn.clicked.connect(self.manifest)
+        unloadCol_R.addWidget(self.maniBtn)
+        unloadCol_R.addWidget(self.manifestList)
+        
     
+    def manifest(self):
+        manifest_Path= fd.askopenfilename()
+        print(manifest_Path)
+        if len(manifest_Path)>0:
+            with open(manifest_Path, "r") as file:
+                for row in file:
+                    itemEntry= row.strip()
+                    self.manifestList.addItem(itemEntry)
 
-
-
-
-
-
-      
-
+    def add_thing(self):
+        print("list accessed")
+        itemName = self.inputName.text()
+        itemWeight= self.inputWeight.text()
+        listInput = "+["+itemName+"  :  "+ itemWeight+ "]"
+        if len(listInput)+len(itemWeight)>2:
+            self.loadList.addItem(listInput)
+            self.inputName.clear()
+            self.inputWeight.clear()
+#-[:+:]========================================Transfer CheckList -========================//
 
 
 class LoginPage(QWidget):
@@ -293,23 +277,25 @@ class Canvas(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         
-        # Create the stacked widget to hold the pages
         self.stacked_widget = QStackedWidget(self)
-        
-        # Create the first page widget and add it to the stacked widget
+
         main_page = MainPage(self.stacked_widget)
         self.stacked_widget.addWidget(main_page)
         
-        # Create the login page widget and add it to the stacked widget
+
         login_page = LoginPage(self.stacked_widget)
         self.stacked_widget.addWidget(login_page)
 
-        # Add the stacked widget to the canvas layout
+        #[+]--
+        transPage= TransferGrid(self.stacked_widget)
+        self.stacked_widget.addWidget(transPage)
+
+
         layout = QVBoxLayout()
         layout.addWidget(self.stacked_widget)
         self.setLayout(layout)
 
-        sizer= 2.25
+        sizer= 1
         window_size = (16 * 96*sizer*1.1, 9 * 96*sizer + 50)
         self.setFixedSize(*window_size)
 
@@ -323,9 +309,9 @@ if __name__ == '__main__':
 
 
 # [::] -- Todo --
-#     - [ ] Add page for the transfer task
+#     - [+] Add page for the transfer task
 #     - [ ] User log comments
 #     - [ ] log file
-#     - [ ] manifest checkist for transfer task
+#     - [+] manifest checkist for transfer task
 #     - [ ] display instructions for moving containers
 #     - [ ] reminder prompt
