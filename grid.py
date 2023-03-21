@@ -1,53 +1,28 @@
-from PySide2.QtWidgets import QApplication, QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget, QStackedWidget, QLineEdit
-from PySide2.QtCore import Qt, QTimer
+from PySide2.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide2.QtCore import QTimer
 from PySide2.QtGui import QFont
 
+from buffer import BufferWindow
+
 TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2)],
-                [(1,5),(1,6),(1,7),(1,8),(1,9),(100,100),(200,100)],
-                [(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2)]]
-
-# A new winodws to show the buffer area 
-class BufferWindow(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.setWindowTitle("Buffer Window")
-        
-        self.buffer_col = 4
-        self.buffer_row = 24
-        
-        buffer_layout = QGridLayout()
-        buffer_layout.setSpacing(0)
-        self.setLayout(buffer_layout)
-
-        for row in range(self.buffer_row):
-            for col in range(self.buffer_col):
-                label = QLabel()
-                label.setFixedSize(96, 96)
-                label.setProperty('row', row)
-                label.setProperty('col', col)
-                block_style = 'border: 1px solid black; '
-                label.setStyleSheet(block_style)
-                buffer_layout.addWidget(label, col, row)
-
-    def update_buffer_labels(self, block_style, buffer_row, buffer_col):
-        for label in self.findChildren(QLabel):
-            if label.property('row') == buffer_row and label.property('col') == buffer_col:
-                label.setStyleSheet(block_style)
+                [(1,5),(1,6),(1,7),(1,8),(1,9),(100,100),(200,100),(300,100),(400,100)],
+                [(2,6), (3,6), (4,6), (5,6), (6,6), (7,6), (8,6), (9,6), (9,7)],
+                [(11,3), (10,3), (9,3), (8,3), (7,3), (6,3), (5,3), (5,4), (5,5), (5,6), (5,7), (5,8), (5,9)],
+                [(1,5), (2,5), (3,5), (4,5), (5,5), (6,5), (7,5)]]
 
 class BlockGrid(QWidget):
     def __init__(self, rows, cols, block_size, parent=None):
         super().__init__(parent)
         
-        # Set a custon start and end block for testing
-        # x=4, y=1
-        self._start_block = (1,2)
-        # x=9, y=3
-        self._end_block = (9,3)
+        # Count how many path have already complete, use to track the current path when update
+        self.finish_path = 0
+        
+        # Index to track the current block in the path
+        self.path_index = 0
         
         # 2 coordinates to track the path block
-        self._track_block_x = self._start_block[0]
-        self._track_block_y = self._start_block[1]
+        self._track_block_x = TESTING_PATH[self.finish_path][0][0]
+        self._track_block_y = TESTING_PATH[self.finish_path][0][1]
         
         # Create a canvas layout to hold the blocks and button 
         animation_page_layout = QHBoxLayout()
@@ -103,12 +78,11 @@ class BlockGrid(QWidget):
                 label.setProperty('row', row)
                 label.setProperty('col', col)
                 block_style = 'border: 1px solid black; '
-                
-                # Algor to convert cord: x-=1, y=9-y 
-                if (row + 1, 9 - col) == self._start_block:
+
+                if (row + 1, 9 - col) == (TESTING_PATH[self.finish_path][0][0], TESTING_PATH[self.finish_path][0][1]):
                     block_style += 'background-color: green;'
-                elif (row + 1, 9 - col) == self._end_block:
-                    block_style += 'background-color: red;'
+                elif (row + 1, 9 - col) == (TESTING_PATH[self.finish_path][-1][0], TESTING_PATH[self.finish_path][-1][1]):
+                    block_style += 'background-color: yellow;'
                     
                 label.setStyleSheet(block_style)
                 grid_layout.addWidget(label, col, row)
@@ -116,6 +90,7 @@ class BlockGrid(QWidget):
         
         # Add button to the layout
         next_button = QPushButton('Next')
+        next_button.clicked.connect(self.next_path)
         
         # Add button to the test buffer area
         test_button = QPushButton('Test')
@@ -129,58 +104,97 @@ class BlockGrid(QWidget):
         
         
         self.setFixedSize(15 * block_size, 9 * block_size)
+        
+        # Call the buffer window if needed, this only run for the first path
+        if self.buffer_require():
+            self.show_Buffer_window()
                 
         # Create a QTimer to update the labels every second
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_labels)
-        self.timer.start(1000)
+        self.timer.start(500)
 
     # Update the labels
     def update_labels(self):
+        
         # print(self._track_block_x, self._track_block_y)
         
-        # Finish one cycle of path, clear the lable and update again
-        if self._track_block_x == self._end_block[0] and self._track_block_y == self._end_block[1]:
+        # Finish one cycle of path, clear the color and tracking block
+        if self.path_index == len(TESTING_PATH[self.finish_path]):
             print("Finish one cycle")
+            self.path_index = 0
             
-            self._track_block_x = self._start_block[0]
-            self._track_block_y = self._start_block[1]
+            # Reset the tracking block to initial position
+            self._track_block_x = TESTING_PATH[self.finish_path][self.path_index][0]
+            self._track_block_y = TESTING_PATH[self.finish_path][self.path_index][1]
             
+            # Update the initial block and reset the path color
             for label in self.findChildren(QLabel):
                 row = label.property('row')
                 col = label.property('col')
                 
                 block_style = 'border: 1px solid black; '
-                if (row + 1, 9 - col) == self._start_block:
+                if (row + 1, 9 - col) == (TESTING_PATH[self.finish_path][0][0], TESTING_PATH[self.finish_path][0][1]):
                     block_style += 'background-color: green;'
-                elif (row + 1, 9 - col) == self._end_block:
-                    block_style += 'background-color: red;'
+                elif (row + 1, 9 - col) == (TESTING_PATH[self.finish_path][-1][0], TESTING_PATH[self.finish_path][-1][1]):
+                    block_style += 'background-color: yellow;'
                 label.setStyleSheet(block_style)
+                
+            # Reset the buffer window
+            if self.buffer_require():
+                self.Buffer_window.clear_grid()
         
         # Otherwise, update the path block
-        else:
-            if self._track_block_y != self._end_block[1]:
-                if self._track_block_y < self._end_block[1]:
-                    self._track_block_y += 1
-                else:
-                    self._track_block_y -= 1
-                
-            elif self._track_block_x != self._end_block[0]:
-                if self._track_block_x < self._end_block[0]:
-                    self._track_block_x += 1
-                else:
-                    self._track_block_x -= 1
+        else:            
+            self._track_block_x = TESTING_PATH[self.finish_path][self.path_index][0]
+            self._track_block_y = TESTING_PATH[self.finish_path][self.path_index][1]
             
-            for label in self.findChildren(QLabel):
-                row = label.property('row')
-                col = label.property('col')
-                if (row + 1, 9 - col) == (self._track_block_x, self._track_block_y):
-                    label.setStyleSheet('border: 1px solid black; background-color: red;')
+            # Skip the first and last block
+            if self.path_index != 0 and self.path_index != len(TESTING_PATH[self.finish_path]) - 1:
+                if self._track_block_x < 100:
+                    for label in self.findChildren(QLabel):
+                        row = label.property('row')
+                        col = label.property('col')
+                        if (row + 1, 9 - col) == (self._track_block_x, self._track_block_y):
+                            label.setStyleSheet('border: 1px solid black; background-color: red;')
+                else:
+                    if hasattr(self, 'Buffer_window'):
+                        block_style = 'border: 1px solid black; background-color: red;'  # Customize this style as needed
+                        self.Buffer_window.update_buffer_labels(block_style, self._track_block_x, self._track_block_y)
+            # Inceament the path index
+            self.path_index += 1
 
-            if hasattr(self, 'Buffer_window'):
-                block_style = 'border: 1px solid black; background-color: red;'  # Customize this style as needed
-                self.Buffer_window.update_buffer_labels(block_style, self._track_block_x, self._track_block_y)
+
+    def next_path(self):
+        self.finish_path += 1
+        self.path_index = 0
+                
+        if hasattr(self, 'Buffer_window'):
+            self.Buffer_window.close()
+                
+        # Check if the current path require buffer
+        if self.buffer_require():
+            self.show_Buffer_window()
+        
+        # Clear blocks color
+        for label in self.findChildren(QLabel):
+            row = label.property('row')
+            col = label.property('col')
             
+            block_style = 'border: 1px solid black; '
+            if (row + 1, 9 - col) == (TESTING_PATH[self.finish_path][0][0], TESTING_PATH[self.finish_path][0][1]):
+                block_style += 'background-color: green;'
+            elif (row + 1, 9 - col) == (TESTING_PATH[self.finish_path][-1][0], TESTING_PATH[self.finish_path][-1][1]):
+                block_style += 'background-color: yellow;'
+            label.setStyleSheet(block_style)
+
+    # A helper function to check if the current path require buffer
+    def buffer_require(self):
+        for corr in TESTING_PATH[self.finish_path]:
+            if corr[0] > 100:
+                return True
+        return False
+    
     # Add this function to create and show the Buffer window
     def show_Buffer_window(self):
         self.Buffer_window = BufferWindow()
