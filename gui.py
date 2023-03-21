@@ -6,10 +6,12 @@ from PySide2.QtCore import Qt, QTimer, QPropertyAnimation, QRect
 import os
 from tkinter import filedialog as fd
 import numpy as np
+import re
+# from a_star import all
+
 
 FILE_NAME = ""
 USERNAME = ""
-
 
 
 indexTionary= {
@@ -179,6 +181,8 @@ class BlockGrid(QWidget):
 class TransferGrid(QWidget):
     #---TOdo--:
         #- [ ] Process input into numbers for output into algo
+            # - [+] Load Output: (name, weight)
+            # - [ ] unload output: ( x, y )
         #- [ ] refactor for better readabilty
         #- [ ] Parse manifest
         #- [ ] Replace manifest list with checklist
@@ -187,6 +191,9 @@ class TransferGrid(QWidget):
         super().__init__(parent)
         self.canvas= canvas
 #-[:+:]===============================Transfer CheckList =========================================\\
+
+        self.loadout= np.empty((0,2))
+        self.unloadItems= np.empty((0,0,0))
 
         #[::]-- Holds the two columns in a single box:---\\
         #--[[load][unload]]--------------------------\\
@@ -206,7 +213,7 @@ class TransferGrid(QWidget):
         loadBtn = QtWidgets.QPushButton("Load Item", self)
         self.loadList= QtWidgets.QListWidget(self)
         loadCol.addWidget(QLabel("Load Items"))
-        loadBtn.clicked.connect(self.add_thing)
+        loadBtn.clicked.connect(self.loadItem)
         inputSect_L.addWidget(itemLabel)
         inputSect_L.addWidget(self.inputName)
         inputSect_L.addWidget(self.weightLabel)
@@ -226,23 +233,47 @@ class TransferGrid(QWidget):
         
     
     def manifest(self):
+        self.manifestList.clear()
         manifest_Path= fd.askopenfilename()
         print(manifest_Path)
         if len(manifest_Path)>0:
+            weightRegex = r'\<(-?\d+(?:\.\d+)?)\>'
             with open(manifest_Path, "r") as file:
                 for row in file:
                     itemEntry= row.strip()
-                    self.manifestList.addItem(itemEntry)
+                    itemWeight= re.findall(weightRegex, itemEntry)
+                    print("wRegex: "+ str(itemWeight))
+                    if "UNUSED" not in row and "NAN" not in row: 
+                        self.manifestList.addItem(itemEntry)
 
-    def add_thing(self):
+    def loadItem(self):
         print("list accessed")
         itemName = self.inputName.text()
         itemWeight= self.inputWeight.text()
-        listInput = "+["+itemName+"  :  "+ itemWeight+ "]"
-        if len(listInput)+len(itemWeight)>2:
-            self.loadList.addItem(listInput)
+        listInput = "+ ["+itemName+"  :  "+ itemWeight+ "]"
+        if len(listInput)+len(itemWeight)>=2:
             self.inputName.clear()
             self.inputWeight.clear()
+            if "NAN" not in listInput and "Nan" not in listInput and 'nan' not in listInput: 
+                if (int(itemWeight)>=0): 
+                    # print(type(itemWeight))
+                    # print(type(int(itemWeight)))
+                    self.loadList.addItem(listInput)
+                    newItem= np.reshape((itemName, itemWeight), (1,2))
+                    self.loadout= np.append(self.loadout, newItem, axis=0)
+                    # print(self.loadout)
+                    # print(self.loadout[0])
+                    # print(self.loadout.shape)
+                else: print('Invalid Weight entry')
+            else: print("Invalid Name")
+        else: print("Missing Required Field")
+
+        # This fx should be modified to use the A* algo to create the instructions
+        def generateLoadInstr(self):
+            print(self.loadList)
+            return self.loadList
+            print(self.loadList)
+            return self.loadList
 #-[:+:]========================================Transfer CheckList -========================//
 
 
