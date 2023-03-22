@@ -9,6 +9,14 @@ import container
 Classes:
     Node - Class to keep the state of a node in the search que, can be compared to each other by distance
 """
+class problem:
+    #Abstract class
+
+    def __init__(self, init_state, goal_state) -> None:
+        self.init_state = copy.deepcopy(init_state)
+        self.goal_state = copy.deepcopy(goal_state)
+
+
 class node:
     #Class to keep the state of a node in the search queue
 

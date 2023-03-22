@@ -1,36 +1,69 @@
-from a_star import all
-import copy
+import a_star
 
-class problem:
-    #Abstract class
+class container:
+    def __init__(self, name: str, mass: int) -> None:
+        self.name = name
+        self.mass = mass
 
-    def __init__(self, init_state, goal_state) -> None:
-        self.init_state = copy.deepcopy(init_state)
-        self.goal_state = copy.deepcopy(goal_state)
- 
+    def __repr__(self):
+        return "({label} {mass})".format(label = self.name,mass = self.mass)
+    def __str__(self):
+        return "({label} {mass})".format(label = self.name,mass = self.mass)
 
-class container(problem):
-    # A class for the containers were moving
-    def __init__(self, init_state, goal_state) -> None:
-        super().__init__(init_state, goal_state)
+class move:
+    def __init__(self,x1:int,y1:int,x2:int,y2:int):
+        self.x1 = x1
+        self.y1 = y1
+        self.x2 = x2
+        self.y2 = y2
+
+    def evaluate():
+        #return the manhattan distance of a move
+        return 0
 
 
-    def a_star(self):
-        #calls A* search to find optimal path to balance
+class ship():
+    def __init__(self,containers: list):
+        self.containers = containers
+
+    def balance():
+        #Return shortest path to the balanced state
+        #[move1,move2,move3,...]
         pass
-    
-    def balance(self):
-        #balances ship as moves are given
+        #returns shortest path to transfer the given list off the ship.
+        #[move1,move2,...]
+        #move1.x1 = -1
+        #move1.y1 = -1
         pass
 
-    def transfer(self):
-        #gives sequence of moves for optimal transfer, receives an array of transfers to make
+    def transfer_list_off(list):
+        # expecting an array like this: [ [1,2], [6,9] , ... ]
+        #returns shortest path to transfer the given list off the ship.
         pass
 
-    def is_balanced(self) -> bool:
-        #returns the state of the container, if its balanced or not
+    def transfer_list_on(num: int):
+        #while (num--): get next container to put on
+        #returns shortest path to transfer the given list off the ship.
         pass
 
-    def goal_test(self) -> bool:
-        #returns true if the current state is the goal state
+    def get_container(cords):
+        #return container at those cords
+        #for container container.get_weight(), container.get_name()
         pass
+
+    def is_balanced() -> bool:
+        pass
+
+    def move(self,move: move):
+        self.containers[move.x1][move.y1] , self.containers[move.x2][move.y2] = self.containers[move.x2][move.y2] , self.containers[move.x1][move.y1]
+
+
+    def __repr__(self):
+        return ",\n".join(map(str, self.containers))
+
+    def __str__(self):
+        return ",\n".join(map(str, self.containers))
+
+  
+
+
