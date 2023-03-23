@@ -50,10 +50,10 @@ def expand(node: node):
     dim2 = len(containers[0])
     children = []
     for column in range(dim2):
-        ship_temp = copy.deepcopy(ship)
-        (top_container,top_index) = ship_temp.get_top(column)
+        (top_container,top_index) = ship.get_top(column)
         if (top_index != -1):
             for column2 in range(dim2):
+                ship_temp = copy.deepcopy(ship)
                 if (column2 != column):
                     if ship_temp.put_top(column2,top_index,column):
                         children.append(ship_temp)
