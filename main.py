@@ -18,8 +18,14 @@ moves = [cont.move(0,1,0,2),cont.move(1,1,0,1)]
 #A move is in the format row,column
 
 #moves can be used like this
-print(ship,'\n')
-ship.move(moves[0])
-print(ship,'\n')
-ship.move(moves[1])
+#print(ship,'\n')
+#ship.move(moves[0])
+#print(ship,'\n')
+#ship.move(moves[1])
+print(ship)
+
+node = ast.node(ship,0,0)
+children = ast.expand(node)
+for child in children:
+    print(child,'\n\n')
 print(ship)
