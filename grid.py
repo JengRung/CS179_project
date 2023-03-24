@@ -68,9 +68,9 @@ class BlockGrid(QWidget):
         buffer_block.setStyleSheet(block_style)
         truck_block.setStyleSheet(block_style)
         
-        # Set buffer and truck block property to -1, -2 to avoid conflict with the grid
-        buffer_block.setProperty('row', -1)
-        buffer_block.setProperty('col', -1)
+        # Set buffer and truck block property to -3, -2 to avoid conflict with the grid
+        buffer_block.setProperty('row', -3)
+        buffer_block.setProperty('col', -3)
         
         truck_block.setProperty('row', -2)
         truck_block.setProperty('col', -2)
