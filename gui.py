@@ -12,6 +12,7 @@ import re
 
 FILE_NAME = ""
 USERNAME = ""
+SIZER= 1.15
 
 
 indexTionary= {
@@ -177,31 +178,46 @@ class BlockGrid(QWidget):
                     label.setStyleSheet('border: 1px solid black; background-color: red;')
 
 
-#[+:]--
+
+
+
+
+#-[:+:]===============================Transfer CheckList =====================================================================\\
 class TransferGrid(QWidget):
     #---TOdo--:
-        #- [ ] Process input into numbers for output into algo
+        #- [+] Process input into numbers for output into A* algo
             # - [+] Load Output: (name, weight)
-            # - [ ] unload output: ( x, y )
+            # - [+] unload output: ( x, y, weight )
         #- [ ] refactor for better readabilty
-        #- [ ] Parse manifest
+        #- [+] Parse manifest weiight and coordinates
+        #- [ ] Parse panifest item names
         #- [ ] Replace manifest list with checklist
+#     - [+] Add page for the transfer task
+#     - [ ] User log comments
+#     - [ ] log file
+#     - [+] manifest checkist for transfer task
+#     - [ ] display instructions for moving containers
+#     - [ ] reminder prompt
         
     def __init__(self, canvas, parent=None):
         super().__init__(parent)
         self.canvas= canvas
-#-[:+:]===============================Transfer CheckList =========================================\\
 
         self.loadout= np.empty((0,2))
-        self.unloadItems= np.empty((0,0,0))
+        self.unloadItems= np.empty((0,3))
 
         #[::]-- Holds the two columns in a single box:---\\
         #--[[load][unload]]--------------------------\\
         colContainer = QtWidgets.QHBoxLayout(self)
+        
         loadCol= QVBoxLayout()
         colContainer.addLayout(loadCol)
-        unloadCol_R= QVBoxLayout()
-        colContainer.addLayout(unloadCol_R)
+
+        self.unloadCol_R= QVBoxLayout()
+        colContainer.addLayout(self.unloadCol_R)
+
+        subCol_R= QVBoxLayout()
+        colContainer.addLayout(subCol_R)
 
         #[+]:-- load column is for data entry--------------------------\\
         #-----------------------------------\\
@@ -226,31 +242,62 @@ class TransferGrid(QWidget):
         #[+]:-- unload column reads from the manifest and makes list--------\\
         self.maniBtn = QtWidgets.QPushButton("Open Manifest", self)
         self.manifestList= QtWidgets.QListWidget(self)
-        unloadCol_R.addWidget(QLabel("Unoad Items"))
+        self.unloadCol_R.addWidget(QLabel("Unload Items"))
         self.maniBtn.clicked.connect(self.manifest)
-        unloadCol_R.addWidget(self.maniBtn)
-        unloadCol_R.addWidget(self.manifestList)
+        self.unloadCol_R.addWidget(self.maniBtn)
+        self.unloadCol_R.addWidget(self.manifestList)
+
+        self.qBtnGroup= QtWidgets.QButtonGroup()
+        # self.unloadCol_R.addWidget(self.qBtnGroup)
+
+
+        #[+]:-- third colum just for submit button--------\\
+        self.subBtn = QtWidgets.QPushButton("Generate Instructions", self)
+        self.subBtn.clicked.connect(self.getLoadout)
+        subCol_R.addWidget(self.subBtn)
         
     
     def manifest(self):
-        self.manifestList.clear()
         manifest_Path= fd.askopenfilename()
-        print(manifest_Path)
+        print("manifest_Path: "+ str(manifest_Path))
         if len(manifest_Path)>0:
-            weightRegex = r'\<(-?\d+(?:\.\d+)?)\>'
+            self.manifestList.clear()
+            l_idx=-1
+            wRegex = r'\{(-?\d+(?:\.\d+)?)\}'
+            # xyRegex = r'\[(-?\d+(?:\,\d+)?)\,'
+            xRegex = r'\[(-?\d+(?:\,\d+)?)\,'
+            yRegex = r'\,(-?\d+(?:\,\d+)?)\]'
+            # nameGex = r'\,(-?\d+(?:\,\d+)?)\]'
+            
             with open(manifest_Path, "r") as file:
                 for row in file:
-                    itemEntry= row.strip()
-                    itemWeight= re.findall(weightRegex, itemEntry)
-                    print("wRegex: "+ str(itemWeight))
-                    if "UNUSED" not in row and "NAN" not in row: 
-                        self.manifestList.addItem(itemEntry)
+                    if "UNUSED" not in row and "NAN" not in row:
+                        l_idx+=1 
+                        itemEntry= row.strip()
+                        itemWeight= int(re.findall(wRegex, itemEntry)[0])
+                        itemX= re.findall(xRegex, itemEntry)
+                        itemY= re.findall(yRegex, itemEntry)
+                        itemXYW= (int(itemX[0]), int(itemY[0]), itemWeight)
+                        self.unloadItems= np.append(self.unloadItems, np.reshape(itemXYW, (1, 3)), axis= 0)
+
+                        print("new item.type: "+ str(type(itemXYW[0]))+','+ str( type(itemXYW[1]))+','+ str( type(itemXYW[2])))
+                        print("new item(x,y,weight): "+ str(itemXYW)+ "-->unloadItems")
+                        print(self.unloadItems)
+                            
+                        tmp_Name= itemEntry[16+2:19+2]
+                        self.manifestList.addItem(tmp_Name)
+
+                        unloadStr= ("[SHIP] ==> xy[" + str(itemXYW[0])+","+ str(itemXYW[1])+ "] Weight[" + str(itemXYW[2]) + "]")
+                        radBtn= QRadioButton(unloadStr)
+                        self.manifestList.setItemWidget(QtWidgets.QListWidgetItem(self.manifestList),radBtn)
+                        self.qBtnGroup.addButton(radBtn, l_idx)
+                        
 
     def loadItem(self):
         print("list accessed")
         itemName = self.inputName.text()
         itemWeight= self.inputWeight.text()
-        listInput = "+ ["+itemName+"  :  "+ itemWeight+ "]"
+        listInput = "+ ["+itemName+"     :     "+ itemWeight+ "] ==>[SHIP]"
         if len(listInput)+len(itemWeight)>=2:
             self.inputName.clear()
             self.inputWeight.clear()
@@ -261,20 +308,24 @@ class TransferGrid(QWidget):
                     self.loadList.addItem(listInput)
                     newItem= np.reshape((itemName, itemWeight), (1,2))
                     self.loadout= np.append(self.loadout, newItem, axis=0)
-                    # print(self.loadout)
-                    # print(self.loadout[0])
-                    # print(self.loadout.shape)
+                    print(str(newItem)+ " --> " + str(self.loadout))
+                    print(str(self.loadout.shape)+ "\n")
                 else: print('Invalid Weight entry')
             else: print("Invalid Name")
         else: print("Missing Required Field")
 
-        # This fx should be modified to use the A* algo to create the instructions
-        def generateLoadInstr(self):
-            print(self.loadList)
-            return self.loadList
-            print(self.loadList)
-            return self.loadList
-#-[:+:]========================================Transfer CheckList -========================//
+        # This fx should maybe modified to use the A* algo to create the instructions
+    def getLoadout(self):
+        if len(self.loadout)>0:
+            print(self.loadout)
+            return self.loadout
+        else:
+            print("Loadout Empty")
+#-[:+:]========================================Transfer CheckList -===========================================================//
+
+
+
+
 
 
 class LoginPage(QWidget):
@@ -312,7 +363,6 @@ class Canvas(QWidget):
 
         main_page = MainPage(self.stacked_widget)
         self.stacked_widget.addWidget(main_page)
-        
 
         login_page = LoginPage(self.stacked_widget)
         self.stacked_widget.addWidget(login_page)
@@ -321,13 +371,12 @@ class Canvas(QWidget):
         transPage= TransferGrid(self.stacked_widget)
         self.stacked_widget.addWidget(transPage)
 
-
         layout = QVBoxLayout()
         layout.addWidget(self.stacked_widget)
         self.setLayout(layout)
 
-        sizer= 1
-        window_size = (16 * 96*sizer*1.1, 9 * 96*sizer + 50)
+        # sizer= 1.5
+        window_size = (16 * 96*SIZER*1.1, 9 * 96*SIZER + 50)
         self.setFixedSize(*window_size)
 
 if __name__ == '__main__':
@@ -339,10 +388,3 @@ if __name__ == '__main__':
 
 
 
-# [::] -- Todo --
-#     - [+] Add page for the transfer task
-#     - [ ] User log comments
-#     - [ ] log file
-#     - [+] manifest checkist for transfer task
-#     - [ ] display instructions for moving containers
-#     - [ ] reminder prompt
