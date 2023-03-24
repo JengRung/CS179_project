@@ -4,8 +4,7 @@ class container:
         self.mass = mass
 
     def __repr__(self):
-        #return "({label} {mass})".format(label = self.name,mass = self.mass)
-        return "{m}".format(m = self.mass)
+        return "({label} {mass})".format(label = self.name,mass = self.mass)
 
     def __str__(self):
         return "({label} {mass})".format(label = self.name,mass = self.mass)
