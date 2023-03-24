@@ -4,15 +4,24 @@ from PySide2.QtGui import QFont
 
 from buffer import BufferWindow
 
-TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2)],
+TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2),(-2,-2)],
+                [(3,7),(3,8),(3,9),(3,10),(4,10),(5,10),(6,10),(6,9),(6,8)],
                 [(1,5),(1,6),(1,7),(1,8),(1,9),(100,100),(200,100),(300,100),(400,100)],
-                [(2,6), (3,6), (4,6), (5,6), (6,6), (7,6), (8,6), (9,6), (9,7)],
+                [(2,6), (3,6), (4,6), (5,6), (-2,-2), (6,6), (7,6), (8,6), (9,6), (9,7)],
                 [(11,3), (10,3), (9,3), (8,3), (7,3), (6,3), (5,3), (5,4), (5,5), (5,6), (5,7), (5,8), (5,9)],
                 [(1,5), (2,5), (3,5), (4,5), (5,5), (6,5), (7,5)]]
 
 class BlockGrid(QWidget):
-    def __init__(self, rows, cols, parent_canvas, parent=None):
+    def __init__(self, parent_canvas, driver, parent=None):
         super().__init__(parent)
+        
+        self.path = TESTING_PATH
+        self.driver = driver
+        
+        rows = 12
+        
+        # 9 cols + 1 for above the ship area
+        cols = 10
         
         # Set the default block_size to 96
         block_size = 96
@@ -26,8 +35,8 @@ class BlockGrid(QWidget):
         self.path_index = 0
         
         # 2 coordinates to track the path block
-        self._track_block_x = TESTING_PATH[self.finish_path][0][0]
-        self._track_block_y = TESTING_PATH[self.finish_path][0][1]
+        self._track_block_x = self.path[self.finish_path][0][0]
+        self._track_block_y = self.path[self.finish_path][0][1]
         
         # Create a canvas layout to hold the blocks and button 
         animation_page_layout = QHBoxLayout()
@@ -66,8 +75,8 @@ class BlockGrid(QWidget):
         truck_block.setProperty('row', -2)
         truck_block.setProperty('col', -2)
         
-        buffer_truck_layout.addWidget(buffer_block, 0, 1)
-        buffer_truck_layout.addWidget(truck_block, 0, 0)
+        buffer_truck_layout.addWidget(buffer_block, 0, 0)
+        buffer_truck_layout.addWidget(truck_block, 0, 1)
         
 
         # Create a grid layout to hold the blocks
@@ -80,35 +89,47 @@ class BlockGrid(QWidget):
             for col in range(cols):
                 label = QLabel()
                 label.setFixedSize(block_size, block_size)
-                label.setProperty('row', row)
-                label.setProperty('col', col)
-                block_style = 'border: 1px solid black; '
+                transfered_row = row + 1
+                transfered_col = 10 - col
+                label.setProperty('row', transfered_row)
+                label.setProperty('col', transfered_col)
+                
+                if col == 0:
+                    block_style = 'border: none; background-color: transparent;'
+                else:
+                    block_style = 'border: 1px solid black; '
 
-                if (row + 1, 9 - col) == (TESTING_PATH[self.finish_path][0][0], TESTING_PATH[self.finish_path][0][1]):
-                    block_style += 'background-color: green;'
-                elif (row + 1, 9 - col) == (TESTING_PATH[self.finish_path][-1][0], TESTING_PATH[self.finish_path][-1][1]):
-                    block_style += 'background-color: yellow;'
-                    
                 label.setStyleSheet(block_style)
                 grid_layout.addWidget(label, col, row)
                 
         
+        # Update the initial block and reset the path color
+        for label in self.findChildren(QLabel):
+            row = label.property('row')
+            col = label.property('col')
+            
+            block_style = 'border: 1px solid black; '
+            if col == 10:
+                block_style = 'border: none; background-color: transparent;'
+            elif (row, col) == (self.path[self.finish_path][0][0], self.path[self.finish_path][0][1]):
+                block_style += 'background-color: green;'
+            elif (row,col) == (self.path[self.finish_path][-1][0], self.path[self.finish_path][-1][1]):
+                block_style += 'background-color: yellow;'
+            label.setStyleSheet(block_style)
+        
         # Add button to the layout
         next_button = QPushButton('Next')
+        next_button.setFixedSize(300, 150)
+        next_button.setFont(QFont("Arial", 20, QFont.Bold))
         next_button.clicked.connect(self.next_path)
-        
-        # Add button to the test buffer area
-        test_button = QPushButton('Test')
-        test_button.clicked.connect(self.show_Buffer_window)
         
         # Button holder layout
         buttons_layout = QVBoxLayout()
         buttons_layout.addWidget(next_button)
-        buttons_layout.addWidget(test_button)
         animation_page_layout.addLayout(buttons_layout,3)
         
         
-        self.setFixedSize(15 * block_size, 9 * block_size)
+        self.setFixedSize(25 * block_size, 10 * block_size)
         
         # Call the buffer window if needed, this only run for the first path
         if self.buffer_require():
@@ -125,13 +146,13 @@ class BlockGrid(QWidget):
         # print(self._track_block_x, self._track_block_y)
         
         # Finish one cycle of path, clear the color and tracking block
-        if self.path_index == len(TESTING_PATH[self.finish_path]):
+        if self.path_index == len(self.path[self.finish_path]):
             print("Finish one cycle")
             self.path_index = 0
             
             # Reset the tracking block to initial position
-            self._track_block_x = TESTING_PATH[self.finish_path][self.path_index][0]
-            self._track_block_y = TESTING_PATH[self.finish_path][self.path_index][1]
+            self._track_block_x = self.path[self.finish_path][self.path_index][0]
+            self._track_block_y = self.path[self.finish_path][self.path_index][1]
             
             # Update the initial block and reset the path color
             for label in self.findChildren(QLabel):
@@ -139,9 +160,11 @@ class BlockGrid(QWidget):
                 col = label.property('col')
                 
                 block_style = 'border: 1px solid black; '
-                if (row + 1, 9 - col) == (TESTING_PATH[self.finish_path][0][0], TESTING_PATH[self.finish_path][0][1]):
+                if col == 10:
+                    block_style = 'border: none; background-color: transparent;'
+                elif (row, col) == (self.path[self.finish_path][0][0], self.path[self.finish_path][0][1]):
                     block_style += 'background-color: green;'
-                elif (row + 1, 9 - col) == (TESTING_PATH[self.finish_path][-1][0], TESTING_PATH[self.finish_path][-1][1]):
+                elif (row,col) == (self.path[self.finish_path][-1][0], self.path[self.finish_path][-1][1]):
                     block_style += 'background-color: yellow;'
                 label.setStyleSheet(block_style)
                 
@@ -151,17 +174,21 @@ class BlockGrid(QWidget):
         
         # Otherwise, update the path block
         else:            
-            self._track_block_x = TESTING_PATH[self.finish_path][self.path_index][0]
-            self._track_block_y = TESTING_PATH[self.finish_path][self.path_index][1]
+            self._track_block_x = self.path[self.finish_path][self.path_index][0]
+            self._track_block_y = self.path[self.finish_path][self.path_index][1]
             
             # Skip the first and last block
-            if self.path_index != 0 and self.path_index != len(TESTING_PATH[self.finish_path]) - 1:
+            if self.path_index != 0 and self.path_index != len(self.path[self.finish_path]) - 1:
                 if self._track_block_x < 100:
                     for label in self.findChildren(QLabel):
                         row = label.property('row')
                         col = label.property('col')
-                        if (row + 1, 9 - col) == (self._track_block_x, self._track_block_y):
+                        
+                        if (row , col) == (self._track_block_x, self._track_block_y):
                             label.setStyleSheet('border: 1px solid black; background-color: red;')
+                        elif row == self._track_block_x and col == self._track_block_y:
+                            label.setStyleSheet('border: 1px solid black; background-color: red;')
+                            
                 else:
                     if hasattr(self, 'Buffer_window'):
                         block_style = 'border: 1px solid black; background-color: red;'  # Customize this style as needed
@@ -174,7 +201,7 @@ class BlockGrid(QWidget):
         self.finish_path += 1
         self.path_index = 0
         
-        if self.finish_path == len(TESTING_PATH) -1:
+        if self.finish_path == len(self.path) -1:
             finish_page = FinishPage(self.parent_canvas)
             # Set the finish page as index 5
             self.parent_canvas.insertWidget(5, finish_page)
@@ -196,15 +223,17 @@ class BlockGrid(QWidget):
             col = label.property('col')
             
             block_style = 'border: 1px solid black; '
-            if (row + 1, 9 - col) == (TESTING_PATH[self.finish_path][0][0], TESTING_PATH[self.finish_path][0][1]):
+            if col == 10:
+                block_style = 'border: none; background-color: transparent;'
+            elif (row, col) == (self.path[self.finish_path][0][0], self.path[self.finish_path][0][1]):
                 block_style += 'background-color: green;'
-            elif (row + 1, 9 - col) == (TESTING_PATH[self.finish_path][-1][0], TESTING_PATH[self.finish_path][-1][1]):
+            elif (row,col) == (self.path[self.finish_path][-1][0], self.path[self.finish_path][-1][1]):
                 block_style += 'background-color: yellow;'
             label.setStyleSheet(block_style)
 
     # A helper function to check if the current path require buffer
     def buffer_require(self):
-        for corr in TESTING_PATH[self.finish_path]:
+        for corr in self.path[self.finish_path]:
             if corr[0] > 100:
                 return True
         return False
@@ -225,12 +254,14 @@ class FinishPage(QWidget):
         self.setLayout(finish_page_layout)
 
         # Add a QLabel to display the finish message
-        finish_message = QLabel("Transfer task is done!")
-        finish_message.setFont(QFont("Arial", 20, QFont.Bold))
+        finish_message = QLabel("Transfer task is done! Remember to send the manifest to the ship company.")
+        finish_message.setFont(QFont("Arial", 25, QFont.Bold))
         finish_page_layout.addWidget(finish_message)
 
         # Add a QPushButton to go back to the main page
-        back_button = QPushButton("Go back")
+        back_button = QPushButton("Back to home page")
+        back_button.setFixedSize(800, 100)
+        back_button.setFont(QFont("Arial", 20, QFont.Bold))
         back_button.clicked.connect(self.go_back)
         finish_page_layout.addWidget(back_button)
 

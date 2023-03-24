@@ -9,13 +9,16 @@ from tkinter import filedialog as fd
 from grid import BlockGrid
 import numpy as np
 import re
-# from a_star import all
+import container as cont
+from log import LogDriver
 
-# USERNAME = ""
 # SIZER= 1.15, 2, 1
 SIZER= 0.7
 
-SHIP_CONTAINERS = np.zeros((12, 9))
+SHIP_CONTAINERS = [[0 for x in range(12)] for y in range(9)]
+
+OUTPUT_LOG_FILE = "output_log.txt"
+LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
 
 indexTionary= {
     'main': 0,
@@ -26,6 +29,7 @@ indexTionary= {
 class MainPage(QWidget):
     def __init__(self, canvas, parent=None):
         super().__init__(parent)
+        
 
         self.canvas = canvas
         
@@ -35,29 +39,33 @@ class MainPage(QWidget):
         
         # Add a label to the layout
         label = QLabel('Welcome, please select a task!')
+        label.setFont(QFont("Arial", 35, QFont.Bold))
         label.setAlignment(Qt.AlignCenter)
         layout.addWidget(label)
 
         balance_button = QPushButton('Balance Task')
-        balance_button.setMaximumSize(150, 50)
+        balance_button.setFixedSize(300, 100)
+        balance_button.setFont(QFont("Arial", 20, QFont.Bold))
         balance_button.clicked.connect(self.start_balance)
         layout.addWidget(balance_button)
 
         transfer_button = QPushButton('Transfer Task')
-        transfer_button.setMaximumSize(150, 50)
+        transfer_button.setFixedSize(300, 100)
+        transfer_button.setFont(QFont("Arial", 20, QFont.Bold))
         transfer_button.clicked.connect(self.start_transfer)
         layout.addWidget(transfer_button)
         
         # Add a button to login
         login_button = QPushButton('Login')
-        login_button.setMaximumSize(150, 50)
+        login_button.setFixedSize(300, 100)
+        login_button.setFont(QFont("Arial", 20, QFont.Bold))
         login_button.clicked.connect(self.login)
         layout.addWidget(login_button)
 
     #[:+]-- changed 'start_app' to start balance, also added 'start_transfer;  one func
     def start_balance(self):
         # Create the block grid and add it to the stacked widget
-        grid = BlockGrid(12, 9, self.canvas)
+        grid = BlockGrid(self.canvas, LOGDRIVER)
         self.canvas.addWidget(grid)
         self.canvas.setCurrentWidget(grid)
 
@@ -164,11 +172,10 @@ class TransferGrid(QWidget):
             self.manifestList.clear()
             l_idx=-1
             wRegex = r'\{(-?\d+(?:\.\d+)?)\}'
-            # xyRegex = r'\[(-?\d+(?:\,\d+)?)\,'
             xRegex = r'\[(-?\d+(?:\,\d+)?)\,'
             yRegex = r'\,(-?\d+(?:\,\d+)?)\]'
-            # nameGex = r'\,(-?\d+(?:\,\d+)?)\]'
             
+            # For reading the manifest file for transfer list ui (Done by Richard)
             with open(manifest_Path, "r") as file:
                 for row in file:
                     if "UNUSED" not in row and "NAN" not in row:
@@ -186,18 +193,34 @@ class TransferGrid(QWidget):
                             
                         tmp_Name= itemEntry[16+2:19+2]
 
-
                         unloadStr= ("["+str(tmp_Name)+"] ==> xy(" + str(itemXYW[0])+","+ str(itemXYW[1])+ ") | {" + str(itemXYW[2]) + "}Kg")
                         self.manifestList.addItem(unloadStr)
-                        # self.manifestList.addItem(QtWidgets.QCheckBox(unloadStr))
-                        # self.manifestList.setItemWidget(QtWidgets.QListWidgetItem(self.manifestList),QtWidgets.QCheckBox(unloadStr))
 
-                        # radBtn= QRadioButton(unloadStr)
-                        # self.manifestList.setItemWidget(QtWidgets.QListWidgetItem(self.manifestList),radBtn)
-                        # self.qBtnGroup.addButton(radBtn, l_idx)
-                        
+            # Loading the manifest to SHIP_CONTAINERS (Done by Justin)
+            with open(manifest_Path, "r") as file:
+                container_pattern = r'(\[.*?\]),\s({.*?}),\s(.*)'
+                for row in file:
+                    items = re.match(container_pattern, row)
 
-                        
+                    container_index, container_weight, container_name= items.groups()
+                    container_indexs = container_index.strip('[]').split(',')
+                    container_weight = int(container_weight.strip('{}'))
+                
+                    if container_name.upper() == "NAN":
+                        SHIP_CONTAINERS[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = -1
+                    
+                    elif container_name.upper() == "UNUSED":
+                        SHIP_CONTAINERS[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = 0
+            
+                    else:
+                        SHIP_CONTAINERS[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = cont.container(container_name, container_weight)
+
+        for i in SHIP_CONTAINERS:
+            for item in i:
+                if type(item) == cont.container: 
+                    if item.name == "Cat":
+                        print("FOUND")
+
     def loadItem(self):
         print("list accessed")
         itemName = self.inputName.text()
@@ -233,15 +256,6 @@ class TransferGrid(QWidget):
             print(item.text())
 
 
-
-
-#-[:+:]========================================Transfer CheckList -===========================================================//
-
-
-
-
-
-
 class LoginPage(QWidget):
     def __init__(self, canvas, parent=None):
         super().__init__(parent)
@@ -257,7 +271,7 @@ class LoginPage(QWidget):
     def login(self, username):
         if username != '':
             print(username)
-            USERNAME = username
+            LOGDRIVER.login(username)
             self.canvas.setCurrentIndex(0)
                     
 class Canvas(QWidget):
