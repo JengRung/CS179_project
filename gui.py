@@ -11,12 +11,11 @@ import numpy as np
 import re
 # from a_star import all
 
-FILE_NAME = ""
 # USERNAME = ""
 # SIZER= 1.15, 2, 1
 SIZER= 0.7
 
-
+SHIP_CONTAINERS = np.zeros((12, 9))
 
 indexTionary= {
     'main': 0,
@@ -48,12 +47,6 @@ class MainPage(QWidget):
         transfer_button.setMaximumSize(150, 50)
         transfer_button.clicked.connect(self.start_transfer)
         layout.addWidget(transfer_button)
-
-        # Add a button to select file
-        file_button = QPushButton('Select File')
-        file_button.setMaximumSize(150, 50)
-        file_button.clicked.connect(self.select_file)
-        layout.addWidget(file_button)
         
         # Add a button to login
         login_button = QPushButton('Login')
@@ -64,8 +57,7 @@ class MainPage(QWidget):
     #[:+]-- changed 'start_app' to start balance, also added 'start_transfer;  one func
     def start_balance(self):
         # Create the block grid and add it to the stacked widget
-        block_size = 96
-        grid = BlockGrid(12, 9, block_size)
+        grid = BlockGrid(12, 9, self.canvas)
         self.canvas.addWidget(grid)
         self.canvas.setCurrentWidget(grid)
 
@@ -81,108 +73,9 @@ class MainPage(QWidget):
         # window= QVBoxLayout(transApp)
 
         self.canvas.setCurrentIndex(indexTionary['transfer']) 
-
-    def select_file(self):
-        global FILE_NAME
-        FILE_NAME = fd.askopenfilename()
-        print(FILE_NAME)
         
     def login(self):
         self.canvas.setCurrentIndex(1) 
-
-#[+:]-- BalanceGrid == BlockGrid
-class BlockGrid(QWidget):
-    # def __init__(self, rows, cols, block_size, parent=None):
-    def __init__(self, rows, cols, block_size, parent=None):
-        super().__init__(parent)
-        
-        # Set a custon start and end block for testing, formate: (x,y)
-        self._start_block = (4,5)
-        self._end_block = (9,3)
-        
-        # 2 coordinates to track the path block
-        self._track_block_x = self._start_block[0]
-        self._track_block_y = self._start_block[1]
-        
-        # Create a canvas layout to hold the blocks and button 
-        animation_page_layout = QHBoxLayout()
-        self.setLayout(animation_page_layout)
-
-
-        grid_layout = QGridLayout()
-        grid_layout.setSpacing(0)
-        animation_page_layout.addLayout(grid_layout)
-
-        for row in range(rows):
-            for col in range(cols):
-                label = QLabel()
-                label.setFixedSize(block_size, block_size)
-                label.setProperty('row', row)
-                label.setProperty('col', col)
-                block_style = 'border: 1px solid black; '
-                
-                # Algor to convert cord: x-=1, y=9-y 
-                if (row + 1, 9 - col) == self._start_block:
-                    block_style += 'background-color: green;'
-                elif (row + 1, 9 - col) == self._end_block:
-                    block_style += 'background-color: red;'
-                    
-                label.setStyleSheet(block_style)
-                grid_layout.addWidget(label, col, row)
-                
-        
-
-        button = QPushButton('Next')
-        animation_page_layout.addWidget(button, 2)
-        
-        self.setFixedSize(12 * block_size + 200, 9 * block_size)
-
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_labels)
-        self.timer.start(1000)
-
-    def update_labels(self):
-        # print(self._track_block_x, self._track_block_y)
-        # Finish one cycle of path, clear the lable and update again
-        if self._track_block_x == self._end_block[0] and self._track_block_y == self._end_block[1]:
-            print("Finish one cycle")
-            
-            self._track_block_x = self._start_block[0]
-            self._track_block_y = self._start_block[1]
-            
-            for label in self.findChildren(QLabel):
-                row = label.property('row')
-                col = label.property('col')
-                
-                block_style = 'border: 1px solid black; '
-                if (row + 1, 9 - col) == self._start_block:
-                    block_style += 'background-color: green;'
-                elif (row + 1, 9 - col) == self._end_block:
-                    block_style += 'background-color: red;'
-                label.setStyleSheet(block_style)
-
-        else:
-            if self._track_block_y != self._end_block[1]:
-                if self._track_block_y < self._end_block[1]:
-                    self._track_block_y += 1
-                else:
-                    self._track_block_y -= 1
-                
-            elif self._track_block_x != self._end_block[0]:
-                if self._track_block_x < self._end_block[0]:
-                    self._track_block_x += 1
-                else:
-                    self._track_block_x -= 1
-            
-            for label in self.findChildren(QLabel):
-                row = label.property('row')
-                col = label.property('col')
-                if (row + 1, 9 - col) == (self._track_block_x, self._track_block_y):
-                    label.setStyleSheet('border: 1px solid black; background-color: red;')
-
-
-
-
 
 
 #-[:+:]===============================Transfer CheckList =====================================================================\\
@@ -330,6 +223,8 @@ class TransferGrid(QWidget):
     def getLoadout(self):
         if len(self.loadout)>0:
             print(self.loadout)
+            # print(self.loadout[0])
+            # print(type(self.loadout))
             return self.loadout
         else:
             print("Loadout Empty")

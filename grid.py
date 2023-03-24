@@ -11,8 +11,13 @@ TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2)],
                 [(1,5), (2,5), (3,5), (4,5), (5,5), (6,5), (7,5)]]
 
 class BlockGrid(QWidget):
-    def __init__(self, rows, cols, block_size, parent=None):
+    def __init__(self, rows, cols, parent_canvas, parent=None):
         super().__init__(parent)
+        
+        # Set the default block_size to 96
+        block_size = 96
+        
+        self.parent_canvas = parent_canvas
         
         # Count how many path have already complete, use to track the current path when update
         self.finish_path = 0
@@ -168,6 +173,15 @@ class BlockGrid(QWidget):
     def next_path(self):
         self.finish_path += 1
         self.path_index = 0
+        
+        if self.finish_path == len(TESTING_PATH) -1:
+            finish_page = FinishPage(self.parent_canvas)
+            # Set the finish page as index 5
+            self.parent_canvas.insertWidget(5, finish_page)
+            self.parent_canvas.setCurrentIndex(5)
+            self.deleteLater()
+
+            return
                 
         if hasattr(self, 'Buffer_window'):
             self.Buffer_window.close()
@@ -199,3 +213,26 @@ class BlockGrid(QWidget):
     def show_Buffer_window(self):
         self.Buffer_window = BufferWindow()
         self.Buffer_window.show()
+
+class FinishPage(QWidget):
+    def __init__(self, parent_canvas, parent=None):
+        super().__init__(parent)
+        
+        self.parent_canvas = parent_canvas
+        
+        # Create a QVBoxLayout to hold the finish message and a button to go back
+        finish_page_layout = QVBoxLayout()
+        self.setLayout(finish_page_layout)
+
+        # Add a QLabel to display the finish message
+        finish_message = QLabel("Transfer task is done!")
+        finish_message.setFont(QFont("Arial", 20, QFont.Bold))
+        finish_page_layout.addWidget(finish_message)
+
+        # Add a QPushButton to go back to the main page
+        back_button = QPushButton("Go back")
+        back_button.clicked.connect(self.go_back)
+        finish_page_layout.addWidget(back_button)
+
+    def go_back(self):
+        self.parent_canvas.setCurrentIndex(0)
