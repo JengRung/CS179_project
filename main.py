@@ -1,16 +1,27 @@
-#the main py file, still have yet to plan out the interaction between the wrapper/gui and the backend stuff
 import container as cont
 import a_star as ast
+import copy
 
-
-#Example list of containers
-containers = [
-    [-1,cont.container("Apples",6),-1,-1],
-    [-1,cont.container("Oranges",10),cont.container("Cats",4),-1]
+#Test cases given by eamonn
+test_blank = [
+    [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+    [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+    [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+    [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+    [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+    [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+    [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+    [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
 ]
-#print(*containers, sep = "\n")
+test1 = copy.deepcopy(test_blank)
+for i in range(test1):
+    for j in range(test1[0]):
+        if i == 7 and j == 7: 
+            test1[i][j] = cont.container("cat",99)
+            test1[i][j] = cont.container("dog",100)
 
 #Example ship
+containers = test1
 ship = cont.ship(containers)
 
 #A* would return moves up to n
@@ -29,3 +40,6 @@ children = ast.expand(node)
 for child in children:
     print(child,'\n\n')
 print(ship)
+
+problem = ast.balance(ship)
+ast.search(problem,trace=True)

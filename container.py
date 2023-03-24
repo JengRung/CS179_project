@@ -57,23 +57,31 @@ class ship():
     def swap(self,x1,y1,x2,y2):
         self.containers[x1][y1] , self.containers[x2][y2] = self.containers[x2][y2] , self.containers[x1][y1]
 
-    def get_top(self,x):
+    def get_top_free_space(self,x):
+        dim = len(self.containers)
+        #Returns top container OR the first blocked space, be careful
+        for i in range(dim):
+            if (self.containers[i][x] != 0):
+                if (i != 0):
+                    return i - 1
+        if self.containers[dim-1][x] == 0:
+            return dim-1
+        else:
+            return -1
+    
+    def get_top_container(self,x):
         for i in range(len(self.containers)):
-            if (self.containers[i][x] != -1):
-                return (self.containers[i][x],i)
-        return (-1,-1)
+            if (self.containers[i][x] != 0 and self.containers[i][x] != -1):
+                return i
+        return -1
             
     def put_top(self,column,x1,y1):
-        for i in range(len(self.containers)):
-            if (self.containers[i][column] != -1):
-                if (i == 0):
-                    return False
-                else:
-                    self.swap(i-1,column,x1,y1)
-                    return True
-            elif (i == len(self.containers)-1):
-                self.swap(i,column,x1,y1)
-                return True
+        j = self.get_top_free_space(column)
+        if j == -1:
+            return False
+        else:
+            self.swap(j,column,x1,y1)
+            return True
 
     def get_sums(self):
         dim = len(self.containers)
@@ -82,17 +90,31 @@ class ship():
         sum_r = 0
         for i in range(dim):
             for j in range(dim2):
-                sum_l += self.containers[i][j].mass
+                if self.containers[i][j] != -1 and self.containers[i][j] != 0:
+                    sum_l += self.containers[i][j].mass
         for i in range(dim):
             for j in range(dim2,len(self.containers[0])):
-                sum_r += self.containers[i][j].mass
+                if self.containers[i][j] != -1 and self.containers[i][j] != 0:
+                    sum_r += self.containers[i][j].mass
         return (sum_l,sum_r)
     
     def is_balanced(self) -> bool:
-        sum_l,sum_r = self.get_sums(self.containers)
-        return (float(max(sum_l,sum_r)/min(sum_l,sum_r))<=1.1)
+        sum_l,sum_r = self.get_sums()
+        return (
+            max(sum_l,sum_r) <= 1.1*min(sum_l,sum_r)
+        )
+    
+    def check_balance(self,left,right) -> bool:
+        return(max(left,right) <= 1.1*min(left,right))
     
     def heuristic(self):
+        dim = len(self.containers)
+        dim2 = len(self.containers[0])
+        sum = 0
+        for i in range(dim):
+            for j in range(dim2):
+                if (type(self.containers[i][j]) == container):
+                    pass
         return 1
 
     def __repr__(self):
