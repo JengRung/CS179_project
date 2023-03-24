@@ -48,10 +48,12 @@ def expand(node: node):
         top_index = ship.get_top_container(column)
         if (top_index != -1):
             for column2 in range(dim2):
-                if (column2 != column and ship.get_top_free_space(column2) != -1):
+                top_new = ship.get_top_free_space(column2)
+                if (column2 != column and top_new != -1):
                     ship_temp = copy.deepcopy(ship)
-                    ship_temp.set_cost((abs(column-column2)+abs(top_index-ship.get_top_free_space(column2))))
+                    ship_temp.set_cost((abs(column-column2)+abs(top_index-top_new)))
                     ship_temp.put_top(column2,top_index,column)
+                    ship_temp.append_moves(top_index,column,top_new,column2)
                     children.append(ship_temp)
     return children
 
