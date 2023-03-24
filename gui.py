@@ -1,18 +1,20 @@
 import sys
-from PySide2.QtWidgets import QApplication, QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget, QStackedWidget, QLineEdit, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QRadioButton
+from PySide2.QtWidgets import QApplication, QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget, QStackedWidget, QLineEdit, QPushButton, QRadioButton
 # import PySide2.QtWidgets
 from PySide2 import QtCore, QtGui, QtWidgets
 from PySide2.QtCore import Qt, QTimer, QPropertyAnimation, QRect
+from PySide2.QtGui import QFont
 import os
 from tkinter import filedialog as fd
+from grid import BlockGrid
 import numpy as np
 import re
 # from a_star import all
 
-
 FILE_NAME = ""
-USERNAME = ""
-SIZER= 1.15
+# USERNAME = ""
+# SIZER= 1.15, 2, 1
+SIZER= 1
 
 
 indexTionary= {
