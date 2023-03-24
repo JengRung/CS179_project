@@ -1,5 +1,3 @@
-from itertools import islice
-
 class container:
     def __init__(self, name: str, mass: int, row : int = -1, col : int = -1) -> None:
         self.name = name
@@ -36,24 +34,30 @@ class container:
         return hash(str(self))
 
 
-class move:
+class Move:
     def __init__(self,x1:int,y1:int,x2:int,y2:int):
         self.x1 = x1
         self.y1 = y1
         self.x2 = x2
         self.y2 = y2
 
-    def evaluate():
-        #return the manhattan distance of a move
-        return 0
+    def __repr__(self):
+        return "({x1},{y1}) -> ({x2},{y2})".format(x1 = self.x1, y1 = self.y1, x2 = self.x2, y2 = self.y2)
+
+    def __str__(self):
+        return "({x1},{y1}) -> ({x2},{y2})".format(x1 = self.x1, y1 = self.y1, x2 = self.x2, y2 = self.y2)
 
 
 class ship():
-    def __init__(self,containers: list[container],last_cost = 0):
+    def __init__(self,containers: list[container],last_cost = 0, moves = []):
         self.containers = containers
         self.last_cost = last_cost
         self.left_set = self.get_left_set()
         self.right_set = self.get_right_set()
+        self.moves = moves
+
+    def append_moves(self,x1,y1,x2,y2):
+        self.moves.append(Move(x1,y1,x2,y2))
 
     def set_cost(self,cost):
         self.last_cost = cost
@@ -83,32 +87,53 @@ class ship():
                     right.add(self.containers[i][j])
         return right
 
-    def balance():
-        #Return shortest path to the balanced state
-        #[move1,move2,move3,...]
-        pass
-        #returns shortest path to transfer the given list off the ship.
-        #[move1,move2,...]
-        #move1.x1 = -1
-        #move1.y1 = -1
-        pass
+    def balance(self,search,problem):
+        try:
+            node,i,j = search(problem)
+        except:
+            return []
+        return node.state.moves
 
-    def transfer_list_off(list):
-        # expecting an array like this: [ [1,2], [6,9] , ... ]
-        #returns shortest path to transfer the given list off the ship.
-        pass
+    def transfer_list_off(self,list):
+        moves = []
+        j = 0
+        while(len(list) != 0):
+            temp = list[-1]
+            for i in list:
+                if i[0] == self.get_top_container(i[1]) + j:
+                    self.move_off(i[0],i[1],moves)
+                    list.remove(i)
+                    break
+                if (i == temp):
+                    j = j + 1
+        return moves
+
+    def move_off(self,x,y,moves):
+        while self.get_top_container(y) != x:
+            self.move_nearest(self.get_top_container(y),y,moves)
+        moves.append(Move(x,y,-2,-2))
+        self.containers[x][y] = 0
+
+    def move_nearest(self,x,y,moves):
+        for i in range(len(self.containers[0])):
+            if y-i >= 0 and self.get_top_container(y-i) == -1:
+                moves.append(Move(x,y,self.get_top_free_space(y-i),y-i))
+                self.swap(x,y,self.get_top_free_space(y-i),y-i)
+                return
+            if y+i < len(self.containers) and self.get_top_container(y+i) == -1:
+                moves.append(Move(x,y,self.get_top_free_space(y+i),y+i))
+                self.swap(x,y,self.get_top_free_space(y+i),y+i)
+                return
+        moves.append(Move(x,y,-3,-3))
 
     def transfer_list_on(num: int):
-        #while (num--): get next container to put on
-        #returns shortest path to transfer the given list off the ship.
-        pass
+        while (num > 0):
+            pass
 
-    def get_container(cords):
-        #return container at those cords
-        #for container container.get_weight(), container.get_name()
-        pass
+    def get_container(self,x,y):
+        return self.containers[x][y]
 
-    def move(self,move: move):
+    def move(self,move: Move):
         self.containers[move.x1][move.y1] , self.containers[move.x2][move.y2] = self.containers[move.x2][move.y2] , self.containers[move.x1][move.y1]
 
     def swap(self,x1,y1,x2,y2):
@@ -121,6 +146,8 @@ class ship():
             if (self.containers[i][x] != 0):
                 if (i != 0):
                     return i - 1
+                else:
+                    return -1
         if self.containers[dim-1][x] == 0:
             return dim-1
         else:
@@ -188,6 +215,38 @@ class ship():
 
     def __str__(self):
         return ",\n".join(map(str, self.containers))
+    
+    def shortest_path(self, move: Move)->list:
+        if move.x2 == -2:
+            pass
+        elif move.x2 == -3:
+            pass
+        else:
+            pass
+        move_temp = []
+        height_max = move.x1
+        temp = 0
+        temp1 = 0
+        for i in range(min(move.y1,move.y2),max(move.y1,move.y2)+1):
+            height_max = min(height_max,self.get_top_free_space(i))
+        for i in range(move.x1,height_max,-1):
+            move_temp.append([i,move.y1])
+        temp = height_max
+        if (move.y1 < move.y2):
+            for i in range(move.y1,move.y2):
+                move_temp.append([temp,i])
+        else:
+            for i in range(move.y1,move.y2,-1):
+                move_temp.append([temp,i])
+        for i in range(temp,move.x2):
+            move_temp.append([i,move.y2])
+        move_temp.append([move.x2,move.y2])
+        return move_temp
+
+        
+
+
+
 
   
 
