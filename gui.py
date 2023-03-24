@@ -10,13 +10,11 @@ from grid import BlockGrid
 import numpy as np
 import re
 import container as cont
+import a_star as ast
 from log import LogDriver
 
 # SIZER= 1.15, 2, 1
 SIZER= 0.7
-
-SHIP_CONTAINERS = [[0 for x in range(12)] for y in range(9)]
-
 OUTPUT_LOG_FILE = "output_log.txt"
 LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
 
@@ -29,7 +27,7 @@ indexTionary= {
 class MainPage(QWidget):
     def __init__(self, canvas, parent=None):
         super().__init__(parent)
-        
+        self.ship_container = [[0 for x in range(12)] for y in range(9)]
 
         self.canvas = canvas
         
@@ -65,9 +63,50 @@ class MainPage(QWidget):
     #[:+]-- changed 'start_app' to start balance, also added 'start_transfer;  one func
     def start_balance(self):
         # Create the block grid and add it to the stacked widget
-        grid = BlockGrid(self.canvas, LOGDRIVER)
+        manifest_Path= fd.askopenfilename()
+        print("manifest_Path: "+ str(manifest_Path))
+        # Loading the manifest to self.ship_container (Done by Justin)
+        with open(manifest_Path, "r") as file:
+            container_pattern = r'(\[.*?\]),\s({.*?}),\s(.*)'
+            for row in file:
+                items = re.match(container_pattern, row)
+
+                container_index, container_weight, container_name= items.groups()
+                container_indexs = container_index.strip('[]').split(',')
+                container_weight = int(container_weight.strip('{}'))
+            
+                if container_name.upper() == "NAN":
+                    self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = -1
+                
+                elif container_name.upper() == "UNUSED":
+                    self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = 0
+        
+                else:
+                    self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = cont.container(container_name, container_weight)
+        self.ship_container.reverse()
+        for row in self.ship_container:
+            print(row)
+        
+        ship = cont.ship(self.ship_container)
+        balance_moves = ship.balance(ast.search,ast.balance(ship))
+        paths = []
+        print(balance_moves)
+        for move in balance_moves:
+            paths.append(ship.shortest_path(move))
+        
+        # reverse x, y cords
+        for path in paths:
+            for move in path:
+                move[0], move[1] = move[1], move[0]
+                move[0] = move[0] + 1
+                move[1] = 9 - move[1] 
+        
+        grid = BlockGrid(self.canvas, LOGDRIVER, paths)
         self.canvas.addWidget(grid)
         self.canvas.setCurrentWidget(grid)
+        
+        # Clear ship container
+        self.ship_container = [[0 for x in range(12)] for y in range(9)]
 
     def start_transfer(self):
         # block_size = 64
@@ -110,6 +149,8 @@ class TransferGrid(QWidget):
 
         self.loadout= np.empty((0,2))
         self.unloadItems= np.empty((0,3))
+        
+        self.ship_container = [[0 for x in range(12)] for y in range(9)]
 
         #[::]-- Holds the two columns in a single box:---\\
         #--[[load][unload]]--------------------------\\
@@ -187,16 +228,16 @@ class TransferGrid(QWidget):
                         itemXYW= (int(itemX[0]), int(itemY[0]), itemWeight)
                         self.unloadItems= np.append(self.unloadItems, np.reshape(itemXYW, (1, 3)), axis= 0)
 
-                        print("new item.type: "+ str(type(itemXYW[0]))+','+ str( type(itemXYW[1]))+','+ str( type(itemXYW[2])))
-                        print("new item(x,y,weight): "+ str(itemXYW)+ "-->unloadItems")
-                        print(self.unloadItems)
+                        # print("new item.type: "+ str(type(itemXYW[0]))+','+ str( type(itemXYW[1]))+','+ str( type(itemXYW[2])))
+                        # print("new item(x,y,weight): "+ str(itemXYW)+ "-->unloadItems")
+                        # print(self.unloadItems)
                             
                         tmp_Name= itemEntry[16+2:19+2]
 
                         unloadStr= ("["+str(tmp_Name)+"] ==> xy(" + str(itemXYW[0])+","+ str(itemXYW[1])+ ") | {" + str(itemXYW[2]) + "}Kg")
                         self.manifestList.addItem(unloadStr)
 
-            # Loading the manifest to SHIP_CONTAINERS (Done by Justin)
+            # Loading the manifest to self.ship_container (Done by Justin)
             with open(manifest_Path, "r") as file:
                 container_pattern = r'(\[.*?\]),\s({.*?}),\s(.*)'
                 for row in file:
@@ -207,20 +248,17 @@ class TransferGrid(QWidget):
                     container_weight = int(container_weight.strip('{}'))
                 
                     if container_name.upper() == "NAN":
-                        SHIP_CONTAINERS[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = -1
+                        self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = -1
                     
                     elif container_name.upper() == "UNUSED":
-                        SHIP_CONTAINERS[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = 0
+                        self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = 0
             
                     else:
-                        SHIP_CONTAINERS[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = cont.container(container_name, container_weight)
-
-        for i in SHIP_CONTAINERS:
-            for item in i:
-                if type(item) == cont.container: 
-                    if item.name == "Cat":
-                        print("FOUND")
-
+                        self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = cont.container(container_name, container_weight)
+                self.ship_container.reverse()
+                for row in self.ship_container:
+                    print(row)
+                    
     def loadItem(self):
         print("list accessed")
         itemName = self.inputName.text()
@@ -231,13 +269,11 @@ class TransferGrid(QWidget):
             self.inputWeight.clear()
             if "NAN" not in listInput and "Nan" not in listInput and 'nan' not in listInput: 
                 if (int(itemWeight)>=0): 
-                    # print(type(itemWeight))
-                    # print(type(int(itemWeight)))
                     self.loadList.addItem(listInput)
                     newItem= np.reshape((itemName, itemWeight), (1,2))
                     self.loadout= np.append(self.loadout, newItem, axis=0)
-                    print(str(newItem)+ " --> " + str(self.loadout))
-                    print(str(self.loadout.shape)+ "\n")
+                    # print(str(newItem)+ " --> " + str(self.loadout))
+                    # print(str(self.loadout.shape)+ "\n")
                 else: print('Invalid Weight entry')
             else: print("Invalid Name")
         else: print("Missing Required Field")
@@ -245,15 +281,44 @@ class TransferGrid(QWidget):
     # This fx should maybe modified to use the A* algo to create the instructions
     def getLoadout(self):
         if len(self.loadout)>0:
-            print(self.loadout)
-            # print(self.loadout[0])
-            # print(type(self.loadout))
+            transfer_list = []
+            for item in self.loadout:
+                for x in range(len(self.ship_container)-1):
+                    for y in range(len(self.ship_container[x])-1):
+                        if self.ship_container[x][y] != -1 and self.ship_container[x][y] != 0:
+                            if item[0] == self.ship_container[x][y].name:
+                                print(self.ship_container[x][y].name, (x, y))                
+                                transfer_list.append([x, y])
+            
+            print(transfer_list)
+            
+            ship = cont.ship(self.ship_container)
+            balance_moves = ship.transfer_list_off(transfer_list)
+            paths = []
+            print(balance_moves)
+            for move in balance_moves:
+                paths.append(ship.shortest_path(move))
+            
+            # reverse x, y cords
+            for path in paths:
+                for move in path:
+                    move[0], move[1] = move[1], move[0]
+                    move[0] = move[0] + 1
+                    move[1] = 9 - move[1] 
+            
+            print(paths)
+            grid = BlockGrid(self.canvas, LOGDRIVER, paths)
+            self.canvas.addWidget(grid)
+            self.canvas.setCurrentWidget(grid)
+            
             return self.loadout
         else:
             print("Loadout Empty")
             
-        for item in ((self.manifestList.selectedItems())):
-            print(item.text())
+            # ship = cont.ship(self.ship_container)
+            # transfer_list = [[0, 3], [0, 7]]
+            # moves = ship.transfer_list_off(transfer_list)
+            # print(moves)
 
 
 class LoginPage(QWidget):

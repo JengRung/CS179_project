@@ -4,19 +4,25 @@ from PySide2.QtGui import QFont
 
 from buffer import BufferWindow
 
+# TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2),(-2,-2)],
+#                 [(3,7),(3,8),(3,9),(3,10),(4,10),(5,10),(6,10),(6,9),(6,8)],
+#                 [(1,5),(1,6),(1,7),(1,8),(1,9),(100,100),(200,100),(300,100),(400,100)],
+#                 [(2,6), (3,6), (4,6), (5,6), (-2,-2), (6,6), (7,6), (8,6), (9,6), (9,7)],
+#                 [(11,3), (10,3), (9,3), (8,3), (7,3), (6,3), (5,3), (5,4), (5,5), (5,6), (5,7), (5,8), (5,9)],
+#                 [(1,5), (2,5), (3,5), (4,5), (5,5), (6,5), (7,5)]]
+
 TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2),(-2,-2)],
                 [(3,7),(3,8),(3,9),(3,10),(4,10),(5,10),(6,10),(6,9),(6,8)],
-                [(1,5),(1,6),(1,7),(1,8),(1,9),(100,100),(200,100),(300,100),(400,100)],
-                [(2,6), (3,6), (4,6), (5,6), (-2,-2), (6,6), (7,6), (8,6), (9,6), (9,7)],
-                [(11,3), (10,3), (9,3), (8,3), (7,3), (6,3), (5,3), (5,4), (5,5), (5,6), (5,7), (5,8), (5,9)],
-                [(1,5), (2,5), (3,5), (4,5), (5,5), (6,5), (7,5)]]
+                [(11,3), (10,3), (9,3), (8,3), (7,3), (6,3), (5,3), (5,4), (5,5), (5,6), (5,7), (5,8), (5,9)]]
 
 class BlockGrid(QWidget):
-    def __init__(self, parent_canvas, driver, parent=None):
+    def __init__(self, parent_canvas, driver, input_path, parent=None):
         super().__init__(parent)
         
-        self.path = TESTING_PATH
+        self.path = input_path
         self.driver = driver
+        
+        self.costs = cost_calculator(self.path)
         
         rows = 12
         
@@ -106,6 +112,11 @@ class BlockGrid(QWidget):
         # Update the initial block and reset the path color
         self.update_blocks_color()
         
+        # Add total cost label to the layout
+        total_cost = QLabel("Total Cost: " + str(sum(self.costs)) + " mins")
+        total_cost.setFont(QFont("Arial", 20, QFont.Bold))
+        total_cost.setStyleSheet("border: 1px solid black; ")
+        
         # Add button to the layout
         next_button = QPushButton('Next')
         next_button.setFixedSize(300, 150)
@@ -114,6 +125,7 @@ class BlockGrid(QWidget):
         
         # Button holder layout
         buttons_layout = QVBoxLayout()
+        buttons_layout.addWidget(total_cost)
         buttons_layout.addWidget(next_button)
         animation_page_layout.addLayout(buttons_layout,3)
         
@@ -134,13 +146,14 @@ class BlockGrid(QWidget):
             row = label.property('row')
             col = label.property('col')
             
+            # block_style = 'border: none; background-color: transparent;'
             block_style = 'border: 1px solid black; '
             if col == 10:
                 block_style = 'border: none; background-color: transparent;'
             elif (row, col) == (self.path[self.finish_path][0][0], self.path[self.finish_path][0][1]):
-                block_style += 'background-color: green;'
+                block_style = 'border: 1px solid black; background-color: green;'
             elif (row,col) == (self.path[self.finish_path][-1][0], self.path[self.finish_path][-1][1]):
-                block_style += 'background-color: yellow;'
+                block_style = 'border: 1px solid black; background-color: yellow;'
             label.setStyleSheet(block_style)
     
     # Update the labels
@@ -150,7 +163,7 @@ class BlockGrid(QWidget):
         
         # Finish one cycle of path, clear the color and tracking block
         if self.path_index == len(self.path[self.finish_path]):
-            print("Finish one cycle")
+            # print("Finish one cycle")
             self.path_index = 0
             
             # Reset the tracking block to initial position
@@ -193,7 +206,7 @@ class BlockGrid(QWidget):
         self.finish_path += 1
         self.path_index = 0
         
-        if self.finish_path == len(self.path) -1:
+        if self.finish_path == len(self.path):
             finish_page = FinishPage(self.parent_canvas)
             # Set the finish page as index 5
             self.parent_canvas.insertWidget(5, finish_page)
