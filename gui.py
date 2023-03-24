@@ -14,7 +14,8 @@ import re
 FILE_NAME = ""
 # USERNAME = ""
 # SIZER= 1.15, 2, 1
-SIZER= 1
+SIZER= 0.7
+
 
 
 indexTionary= {
@@ -193,13 +194,14 @@ class TransferGrid(QWidget):
         #- [ ] refactor for better readabilty
         #- [+] Parse manifest weiight and coordinates
         #- [ ] Parse panifest item names
-        #- [ ] Replace manifest list with checklist
+        #- [+] Replace manifest list with Multi-select
 #     - [+] Add page for the transfer task
 #     - [ ] User log comments
 #     - [ ] log file
 #     - [+] manifest checkist for transfer task
 #     - [ ] display instructions for moving containers
 #     - [ ] reminder prompt
+#     - [ ] Generat new Manifest
         
     def __init__(self, canvas, parent=None):
         super().__init__(parent)
@@ -230,7 +232,7 @@ class TransferGrid(QWidget):
         self.inputWeight = QLineEdit()
         loadBtn = QtWidgets.QPushButton("Load Item", self)
         self.loadList= QtWidgets.QListWidget(self)
-        loadCol.addWidget(QLabel("Load Items"))
+        loadCol.addWidget(QLabel("Enter Name and Weight of items to be Loaded: "))
         loadBtn.clicked.connect(self.loadItem)
         inputSect_L.addWidget(itemLabel)
         inputSect_L.addWidget(self.inputName)
@@ -241,19 +243,22 @@ class TransferGrid(QWidget):
         loadCol.addWidget(self.loadList)
 
 
-        #[+]:-- unload column reads from the manifest and makes list--------\\
+        #[+]:-- unload column reads from the manifest and makes list-----------\\
         self.maniBtn = QtWidgets.QPushButton("Open Manifest", self)
         self.manifestList= QtWidgets.QListWidget(self)
-        self.unloadCol_R.addWidget(QLabel("Unload Items"))
+        self.manifestList.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.unloadCol_R.addWidget(QLabel("Select all items to unload: "))
         self.maniBtn.clicked.connect(self.manifest)
         self.unloadCol_R.addWidget(self.maniBtn)
         self.unloadCol_R.addWidget(self.manifestList)
-
         self.qBtnGroup= QtWidgets.QButtonGroup()
         # self.unloadCol_R.addWidget(self.qBtnGroup)
+        # self.scrollBox = QtWidgets.QScrollArea(self)
 
 
-        #[+]:-- third colum just for submit button--------\\
+
+
+        #[+]:-- third colum just for submit button------------------------------\\
         self.subBtn = QtWidgets.QPushButton("Generate Instructions", self)
         self.subBtn.clicked.connect(self.getLoadout)
         subCol_R.addWidget(self.subBtn)
@@ -287,14 +292,19 @@ class TransferGrid(QWidget):
                         print(self.unloadItems)
                             
                         tmp_Name= itemEntry[16+2:19+2]
-                        self.manifestList.addItem(tmp_Name)
 
-                        unloadStr= ("[SHIP] ==> xy[" + str(itemXYW[0])+","+ str(itemXYW[1])+ "] Weight[" + str(itemXYW[2]) + "]")
-                        radBtn= QRadioButton(unloadStr)
-                        self.manifestList.setItemWidget(QtWidgets.QListWidgetItem(self.manifestList),radBtn)
-                        self.qBtnGroup.addButton(radBtn, l_idx)
+
+                        unloadStr= ("["+str(tmp_Name)+"] ==> xy(" + str(itemXYW[0])+","+ str(itemXYW[1])+ ") | {" + str(itemXYW[2]) + "}Kg")
+                        self.manifestList.addItem(unloadStr)
+                        # self.manifestList.addItem(QtWidgets.QCheckBox(unloadStr))
+                        # self.manifestList.setItemWidget(QtWidgets.QListWidgetItem(self.manifestList),QtWidgets.QCheckBox(unloadStr))
+
+                        # radBtn= QRadioButton(unloadStr)
+                        # self.manifestList.setItemWidget(QtWidgets.QListWidgetItem(self.manifestList),radBtn)
+                        # self.qBtnGroup.addButton(radBtn, l_idx)
                         
 
+                        
     def loadItem(self):
         print("list accessed")
         itemName = self.inputName.text()
@@ -316,13 +326,20 @@ class TransferGrid(QWidget):
             else: print("Invalid Name")
         else: print("Missing Required Field")
 
-        # This fx should maybe modified to use the A* algo to create the instructions
+    # This fx should maybe modified to use the A* algo to create the instructions
     def getLoadout(self):
         if len(self.loadout)>0:
             print(self.loadout)
             return self.loadout
         else:
             print("Loadout Empty")
+            
+        for item in ((self.manifestList.selectedItems())):
+            print(item.text())
+
+
+
+
 #-[:+:]========================================Transfer CheckList -===========================================================//
 
 
@@ -333,24 +350,15 @@ class TransferGrid(QWidget):
 class LoginPage(QWidget):
     def __init__(self, canvas, parent=None):
         super().__init__(parent)
-        
         self.canvas = canvas
-        
         layout = QVBoxLayout()
-        
-        # Create a QLineEdit widget to hold the text
         text_box = QLineEdit()
-        
-        # Create a button to confirm login
         confirm_login = QPushButton('Log In')
         confirm_login.setMaximumSize(150, 50)
         confirm_login.clicked.connect(lambda: self.login(text_box.text()))
-        
-        # Add widgets to the layout
         layout.addWidget(text_box)
         layout.addWidget(confirm_login)
         self.setLayout(layout)
-        
     def login(self, username):
         if username != '':
             print(username)
@@ -377,14 +385,18 @@ class Canvas(QWidget):
         layout.addWidget(self.stacked_widget)
         self.setLayout(layout)
 
-        # sizer= 1.5
-        window_size = (16 * 96*SIZER*1.1, 9 * 96*SIZER + 50)
+
+        rez= app.primaryScreen().size()
+        # window_size = (16 * 96*SIZER*1.1, 9 * 96*SIZER + 50)
+        window_size = (rez.width()*SIZER, rez.height()*SIZER)
         self.setFixedSize(*window_size)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     canvas = Canvas()
     canvas.show()
+
+
     sys.exit(app.exec_())
 
 
