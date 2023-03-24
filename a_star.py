@@ -15,14 +15,14 @@ class balance():
         return state.is_balanced()
 
 class node:
-    def __init__(self, state: cont.ship, depth: int, distance: int) -> None:
+    def __init__(self, state: cont.ship, depth, distance) -> None:
         self.state = copy.deepcopy(state)
         self.depth = depth
         self.distance = distance
 
     def __lt__(self, other):
         if (self.distance + self.depth == other.distance + other.depth):
-            return self.depth < other.depth
+            return self.distance < other.distance
         else:
             return (self.distance + self.depth) < (other.distance + other.depth)
 
@@ -39,10 +39,6 @@ def make_que(node: node) -> queue.Queue:
 def make_node(state, depth: int, distance: int) -> node:
     return node(state,depth,distance)
 
-def heuristic(state: cont.ship) -> int:
-    dist = 0
-    return dist
-
 def expand(node: node):
     ship = copy.deepcopy(node.state)
     containers = ship.containers
@@ -54,30 +50,9 @@ def expand(node: node):
             for column2 in range(dim2):
                 if (column2 != column and ship.get_top_free_space(column2) != -1):
                     ship_temp = copy.deepcopy(ship)
+                    ship_temp.set_cost((abs(column-column2)+abs(top_index-ship.get_top_free_space(column2))))
                     ship_temp.put_top(column2,top_index,column)
                     children.append(ship_temp)
-    return children
-
-
-
-
-    """ for i in range(dim2):
-        for j in range(dim):
-            if (containers[j][i] != -1):
-                for k in range(dim2):
-                    for l in range(dim):
-                        if (k != i and l == 0 and containers[l][k] == -1):
-                            ship_temp = copy.deepcopy(ship)
-                            ship_temp.swap(j,i,l,k)
-                            children.append(ship_temp)
-                            break
-                        elif (k != i and l != 0 and containers[l][k] != -1):
-                            if (containers[l-1][k] == -1):
-                                ship_temp = copy.deepcopy(ship)
-                                ship_temp.swap(j,i,l-1,k)
-                                children.append(ship_temp)
-                                break
-                break """
     return children
 
 #Que's the children passed in to the que
@@ -95,7 +70,7 @@ def queing_function(nodes: queue.PriorityQueue, children: list[cont.ship], depth
 
 #Our main search; que's based on the passed in queing function
 def search(problem: balance,queing_function = queing_function,trace = False):
-    nodes = make_que(make_node(problem.init_state,0,0))
+    nodes = make_que(make_node(problem.init_state,0,problem.init_state.heuristic()))
     i = 0
     visited_nodes = {str(problem.init_state.containers)}
     while not nodes.empty():

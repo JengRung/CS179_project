@@ -36,15 +36,11 @@ for i in range(len(test2)):
             test2[i][j] = -1
 
 #Example ship
-containers = test2
+containers = test1
 ship = cont.ship(containers)
-
-print(ship)
+print(ship.heuristic())
 print("------- Start --------")
 
 problem = ast.balance(ship)
-try:
-    ast.search(problem,trace=True)
-except:
-    print("Can not be balanced, use bad algorithm :(")
-
+node,depth,i = ast.search(problem,trace=True)
+print(i)
