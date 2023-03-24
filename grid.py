@@ -104,18 +104,7 @@ class BlockGrid(QWidget):
                 
         
         # Update the initial block and reset the path color
-        for label in self.findChildren(QLabel):
-            row = label.property('row')
-            col = label.property('col')
-            
-            block_style = 'border: 1px solid black; '
-            if col == 10:
-                block_style = 'border: none; background-color: transparent;'
-            elif (row, col) == (self.path[self.finish_path][0][0], self.path[self.finish_path][0][1]):
-                block_style += 'background-color: green;'
-            elif (row,col) == (self.path[self.finish_path][-1][0], self.path[self.finish_path][-1][1]):
-                block_style += 'background-color: yellow;'
-            label.setStyleSheet(block_style)
+        self.update_blocks_color()
         
         # Add button to the layout
         next_button = QPushButton('Next')
@@ -140,6 +129,20 @@ class BlockGrid(QWidget):
         self.timer.timeout.connect(self.update_labels)
         self.timer.start(500)
 
+    def update_blocks_color(self):
+        for label in self.findChildren(QLabel):
+            row = label.property('row')
+            col = label.property('col')
+            
+            block_style = 'border: 1px solid black; '
+            if col == 10:
+                block_style = 'border: none; background-color: transparent;'
+            elif (row, col) == (self.path[self.finish_path][0][0], self.path[self.finish_path][0][1]):
+                block_style += 'background-color: green;'
+            elif (row,col) == (self.path[self.finish_path][-1][0], self.path[self.finish_path][-1][1]):
+                block_style += 'background-color: yellow;'
+            label.setStyleSheet(block_style)
+    
     # Update the labels
     def update_labels(self):
         
@@ -155,18 +158,7 @@ class BlockGrid(QWidget):
             self._track_block_y = self.path[self.finish_path][self.path_index][1]
             
             # Update the initial block and reset the path color
-            for label in self.findChildren(QLabel):
-                row = label.property('row')
-                col = label.property('col')
-                
-                block_style = 'border: 1px solid black; '
-                if col == 10:
-                    block_style = 'border: none; background-color: transparent;'
-                elif (row, col) == (self.path[self.finish_path][0][0], self.path[self.finish_path][0][1]):
-                    block_style += 'background-color: green;'
-                elif (row,col) == (self.path[self.finish_path][-1][0], self.path[self.finish_path][-1][1]):
-                    block_style += 'background-color: yellow;'
-                label.setStyleSheet(block_style)
+            self.update_blocks_color()
                 
             # Reset the buffer window
             if self.buffer_require():
@@ -218,18 +210,7 @@ class BlockGrid(QWidget):
             self.show_Buffer_window()
         
         # Clear blocks color
-        for label in self.findChildren(QLabel):
-            row = label.property('row')
-            col = label.property('col')
-            
-            block_style = 'border: 1px solid black; '
-            if col == 10:
-                block_style = 'border: none; background-color: transparent;'
-            elif (row, col) == (self.path[self.finish_path][0][0], self.path[self.finish_path][0][1]):
-                block_style += 'background-color: green;'
-            elif (row,col) == (self.path[self.finish_path][-1][0], self.path[self.finish_path][-1][1]):
-                block_style += 'background-color: yellow;'
-            label.setStyleSheet(block_style)
+        self.update_blocks_color()
 
     # A helper function to check if the current path require buffer
     def buffer_require(self):
@@ -267,3 +248,35 @@ class FinishPage(QWidget):
 
     def go_back(self):
         self.parent_canvas.setCurrentIndex(0)
+
+'''
+Algor:
+    1. Sort all the block base on the ship, buffer area and truck
+    2. If there is only ship, cost = # of ship_block - 1
+    3. If there is ship and truck, cost = # of ship_block - 1 + 2 (for ship to truck)
+    4: If there is ship and buffer, cost = # of ship_block - 1 + 4 (for ship to buffer) + # of buffer_block - 1
+'''
+def cost_calculator(paths):
+    
+    arr_costs = []
+    for path in paths:
+        
+        blocks = {"truck": 0, "buffer": 0, "ship": 0}
+        for move in path:
+            if move[0] == -2:
+                blocks["truck"] += 1
+            elif move[0] >= 100:
+                blocks["buffer"] += 1
+            else:
+                blocks["ship"] += 1
+
+        total_cost = blocks["ship"] - 1
+        if blocks["truck"] == 1:
+            total_cost += 2
+        elif blocks["buffer"] > 0:
+            total_cost += blocks["buffer"] - 1
+            total_cost += 4
+        
+        arr_costs.append(total_cost)
+
+    return arr_costs
