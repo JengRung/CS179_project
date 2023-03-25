@@ -3,6 +3,7 @@ from PySide2.QtCore import QTimer
 from PySide2.QtGui import QFont
 
 from buffer import BufferWindow
+import container as cont
 
 # TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2),(-2,-2)],
 #                 [(3,7),(3,8),(3,9),(3,10),(4,10),(5,10),(6,10),(6,9),(6,8)],
@@ -16,11 +17,13 @@ TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2),(-2,-2)],
                 [(11,3), (10,3), (9,3), (8,3), (7,3), (6,3), (5,3), (5,4), (5,5), (5,6), (5,7), (5,8), (5,9)]]
 
 class BlockGrid(QWidget):
-    def __init__(self, parent_canvas, driver, input_path, parent=None):
+    def __init__(self, parent_canvas, driver, input_path, container_status, parent=None):
         super().__init__(parent)
         
         self.path = input_path
         self.driver = driver
+        self.container_status = container_status
+        
         
         self.costs = cost_calculator(self.path)
         
@@ -59,13 +62,9 @@ class BlockGrid(QWidget):
         # Specify the font size and boldness
         buffer_block.setText('Buffer')
         truck_block.setText('Truck')
-        
-        font = QFont()
-        font.setPointSize(12)  # Set the desired font size here
-        font.setBold(True)  # Set the font to bold (optional)
 
-        buffer_block.setFont(font)
-        truck_block.setFont(font)
+        buffer_block.setFont(QFont("Arial", 12, QFont.Bold))
+        truck_block.setFont(QFont("Arial", 12, QFont.Bold))
         
         buffer_block.setFixedSize(block_size, block_size)
         truck_block.setFixedSize(block_size, block_size)
@@ -111,6 +110,13 @@ class BlockGrid(QWidget):
         
         # Update the initial block and reset the path color
         self.update_blocks_color()
+        
+        # Update nan block
+        self.update_NAN_blocks_color()
+        
+        # Update the label block name
+        self.update_label_name()
+        
         
         # Add total cost label to the layout
         total_cost = QLabel("Total Cost: " + str(sum(self.costs)) + " mins")
@@ -172,6 +178,7 @@ class BlockGrid(QWidget):
             
             # Update the initial block and reset the path color
             self.update_blocks_color()
+            self.update_NAN_blocks_color()
                 
             # Reset the buffer window
             if self.buffer_require():
@@ -200,9 +207,87 @@ class BlockGrid(QWidget):
                         self.Buffer_window.update_buffer_labels(block_style, self._track_block_x, self._track_block_y)
             # Inceament the path index
             self.path_index += 1
+    
+    def update_label_name(self):
+        
+        # Format: [[name, [x,y]], [name, [x,y]], ...]
+        exist_contains =[]
+        # Format: [x,y], [x,y], ...]
+        empty_contains = []
+        for x in range(len(self.container_status)) :
+            for y in range(len(self.container_status[x])):
+                if type(self.container_status[x][y]) is cont.container:
+                    exist_contains.append([self.container_status[x][y].name, [x,y]])
+                elif self.container_status[x][y] == 0:
+                    empty_contains.append([x,y])
+        
+        # convert x, y cords
+        for item in exist_contains:
+            coord = item[1]
+            coord[0], coord[1] = coord[1], coord[0]
+            coord[0] = coord[0] + 1
+            coord[1] = 9 - coord[1] 
+        
+        for item in empty_contains:
+            item[0], item[1] = item[1], item[0]
+            item[0] = item[0] + 1
+            item[1] = 9 - item[1]
+        
+        for label in self.findChildren(QLabel):
+            row = label.property('row')
+            col = label.property('col')
+            for item in exist_contains:
+                if (row, col) == (item[1][0], item[1][1]):
+                    label.setText(item[0])
+                    label.setFont(QFont("Arial", 12, QFont.Bold))
+                    
+            for item in empty_contains:
+                if (row, col) == (item[0], item[1]):
+                    label.setText("")
+                    label.setFont(QFont("Arial", 12, QFont.Bold))
 
+    # This function update all NAN block to black color, based on the input ship manifest
+    def update_NAN_blocks_color(self):
+        nan_contains =[]
+        for x in range(len(self.container_status)) :
+            for y in range(len(self.container_status[x])):
+                if self.container_status[x][y] == -1:
+                    nan_contains.append([x,y])
 
+        # convert x, y cords
+        for item in nan_contains:
+            item[0], item[1] = item[1], item[0]
+            item[0] = item[0] + 1
+            item[1] = 9 - item[1] 
+                
+        for label in self.findChildren(QLabel):
+            row = label.property('row')
+            col = label.property('col')
+            for item in nan_contains:
+                if (row, col) == (item[0], item[1]):
+                    block_style = 'border: 1px solid black; background-color: black;'
+                    label.setStyleSheet(block_style)
+    
+    # Switch items in the container status
+    def update_container_status_move(self, coord1, coord2):
+        old_coord = coord1
+        new_coord = coord2
+        
+        def reverse_coord(coord):
+            coord[0] = coord[0] - 1
+            coord[1] = 9 - coord[1]
+            coord[0], coord[1] = coord[1], coord[0]
+
+        reverse_coord(old_coord)
+        reverse_coord(new_coord)
+        
+        self.container_status[old_coord[0]][old_coord[1]], self.container_status[new_coord[0]][new_coord[1]] = self.container_status[new_coord[0]][new_coord[1]], self.container_status[old_coord[0]][old_coord[1]]
+        
     def next_path(self):
+        old_coord = self.path[self.finish_path][0]
+        new_coord = self.path[self.finish_path][-1]
+        self.update_container_status_move(old_coord, new_coord)
+        
         self.finish_path += 1
         self.path_index = 0
         
@@ -212,7 +297,6 @@ class BlockGrid(QWidget):
             self.parent_canvas.insertWidget(5, finish_page)
             self.parent_canvas.setCurrentIndex(5)
             self.deleteLater()
-
             return
                 
         if hasattr(self, 'Buffer_window'):
@@ -224,6 +308,8 @@ class BlockGrid(QWidget):
         
         # Clear blocks color
         self.update_blocks_color()
+        self.update_NAN_blocks_color()
+        self.update_label_name()
 
     # A helper function to check if the current path require buffer
     def buffer_require(self):
