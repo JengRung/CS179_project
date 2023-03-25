@@ -14,7 +14,7 @@ import a_star as ast
 from log import LogDriver
 
 # SIZER= 1.15, 2, 1
-SIZER= 0.7
+SIZER= 0.5
 OUTPUT_LOG_FILE = "output_log.txt"
 LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
 
@@ -125,7 +125,7 @@ class MainPage(QWidget):
         self.canvas.setCurrentIndex(1) 
 
 
-#-[:+:]===============================Transfer CheckList =====================================================================\\
+#-[:+:]===============================\\Transfer CheckList\\=====================================================================\\
 class TransferGrid(QWidget):
     #---TOdo--:
         #- [+] Process input into numbers for output into A* algo
@@ -133,7 +133,7 @@ class TransferGrid(QWidget):
             # - [+] unload output: ( x, y, weight )
         #- [ ] refactor for better readabilty
         #- [+] Parse manifest weiight and coordinates
-        #- [ ] Parse panifest item names
+        #- [+] Parse panifest item names
         #- [+] Replace manifest list with Multi-select
 #     - [+] Add page for the transfer task
 #     - [ ] User log comments
@@ -202,7 +202,7 @@ class TransferGrid(QWidget):
 
         #[+]:-- third colum just for submit button------------------------------\\
         self.subBtn = QtWidgets.QPushButton("Generate Instructions", self)
-        self.subBtn.clicked.connect(self.getLoadout)
+        self.subBtn.clicked.connect(self.generate)
         subCol_R.addWidget(self.subBtn)
         
     
@@ -219,45 +219,51 @@ class TransferGrid(QWidget):
             # For reading the manifest file for transfer list ui (Done by Richard)
             with open(manifest_Path, "r") as file:
                 for row in file:
-                    if "UNUSED" not in row and "NAN" not in row:
-                        l_idx+=1 
-                        itemEntry= row.strip()
-                        itemWeight= int(re.findall(wRegex, itemEntry)[0])
-                        itemX= re.findall(xRegex, itemEntry)
-                        itemY= re.findall(yRegex, itemEntry)
-                        itemXYW= (int(itemX[0]), int(itemY[0]), itemWeight)
+                    itemEntry= row.strip()
+                    tmp_Name= itemEntry[16+2:len(itemEntry)]
+                    l_idx+=1 
+                    itemWeight= int(re.findall(wRegex, itemEntry)[0])
+                    itemX= re.findall(xRegex, itemEntry)
+                    itemY= re.findall(yRegex, itemEntry)
+                    itemXYW= (int(itemX[0]), int(itemY[0]), itemWeight)
+                    if tmp_Name.upper()=="NAN":
+                        self.ship_container[int(itemXYW[0]) - 1][int(itemXYW[1]) - 1] = -1
+                    elif tmp_Name.upper()=="UNUSED":
+                        self.ship_container[int(itemXYW[0]) - 1][int(itemXYW[1]) - 1] = 0
+                    
+                    else:
                         self.unloadItems= np.append(self.unloadItems, np.reshape(itemXYW, (1, 3)), axis= 0)
-
-                        # print("new item.type: "+ str(type(itemXYW[0]))+','+ str( type(itemXYW[1]))+','+ str( type(itemXYW[2])))
-                        # print("new item(x,y,weight): "+ str(itemXYW)+ "-->unloadItems")
-                        # print(self.unloadItems)
-                            
-                        tmp_Name= itemEntry[16+2:19+2]
-
                         unloadStr= ("["+str(tmp_Name)+"] ==> xy(" + str(itemXYW[0])+","+ str(itemXYW[1])+ ") | {" + str(itemXYW[2]) + "}Kg")
                         self.manifestList.addItem(unloadStr)
-
-            # Loading the manifest to self.ship_container (Done by Justin)
-            with open(manifest_Path, "r") as file:
-                container_pattern = r'(\[.*?\]),\s({.*?}),\s(.*)'
-                for row in file:
-                    items = re.match(container_pattern, row)
-
-                    container_index, container_weight, container_name= items.groups()
-                    container_indexs = container_index.strip('[]').split(',')
-                    container_weight = int(container_weight.strip('{}'))
-                
-                    if container_name.upper() == "NAN":
-                        self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = -1
-                    
-                    elif container_name.upper() == "UNUSED":
-                        self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = 0
-            
-                    else:
-                        self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = cont.container(container_name, container_weight)
+                        #[+]-- Create Ship State based on manifest: 
+                        self.ship_container[int(itemXYW[0]) - 1][int(itemXYW[1]) - 1] = cont.container(tmp_Name, itemXYW[2])
                 self.ship_container.reverse()
                 for row in self.ship_container:
                     print(row)
+
+
+            # Loading the manifest to self.ship_container (Done by Justin)
+            # with open(manifest_Path, "r") as file:
+            #     container_pattern = r'(\[.*?\]),\s({.*?}),\s(.*)'
+            #     for row in file:
+            #         items = re.match(container_pattern, row)
+
+            #         container_index, container_weight, container_name= items.groups()
+            #         container_indexs = container_index.strip('[]').split(',')
+            #         container_weight = int(container_weight.strip('{}'))
+                
+            #         if container_name.upper() == "NAN":
+            #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = -1
+                    
+            #         elif container_name.upper() == "UNUSED":
+            #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = 0
+            
+            #         else:
+            #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = cont.container(container_name, container_weight)
+            #     self.ship_container.reverse()
+            #     for row in self.ship_container:
+            #         print(row)
+
                     
     def loadItem(self):
         print("list accessed")
@@ -278,24 +284,37 @@ class TransferGrid(QWidget):
             else: print("Invalid Name")
         else: print("Missing Required Field")
 
-    # This fx should maybe modified to use the A* algo to create the instructions
-    def getLoadout(self):
+    # [+]-- This function is supposed to 
+    def generate(self):
         if len(self.loadout)>0:
-            transfer_list = []
-            for item in self.loadout:
-                for x in range(len(self.ship_container)-1):
-                    for y in range(len(self.ship_container[x])-1):
-                        if self.ship_container[x][y] != -1 and self.ship_container[x][y] != 0:
-                            if item[0] == self.ship_container[x][y].name:
-                                print(self.ship_container[x][y].name, (x, y))                
-                                transfer_list.append([x, y])
-            
-            print(transfer_list)
+            # transfer_list = []
+            # for item in self.loadout:
+            #     for x in range(len(self.ship_container)-1):
+            #         for y in range(len(self.ship_container[x])-1):
+            #             if self.ship_container[x][y] != -1 and self.ship_container[x][y] != 0:
+            #                 if item[0] == self.ship_container[x][y].name:
+            #                     print(self.ship_container[x][y].name, (x, y))                
+            #                     transfer_list.append([x, y])
+
+
+            #[+]-- Populate transfer_list with items that the user has selected to UNload fro the ship------\
+            transfer_list= []
+            print('\nSelected For Unloading: ')
+            for item in self.manifestList.selectedItems():
+                print(item.text())
+                x= int((re.findall((r'\((-?\d+(?:\,\d+)?)\,'),item.text())[0]))
+                y= int((re.findall((r'\,(-?\d+(?:\,\d+)?)\)'),item.text())[0])) 
+                # transfer_list.append((x,y))
+                transfer_list.append([x,y])
+            print("        [OUTGOING]:=======> "+ str(transfer_list))
+            #-----------------------------------------------------------------------------------------------/
+
             
             ship = cont.ship(self.ship_container)
             balance_moves = ship.transfer_list_off(transfer_list)
-            paths = []
             print(balance_moves)
+
+            paths = []
             for move in balance_moves:
                 paths.append(ship.shortest_path(move))
             
@@ -305,8 +324,9 @@ class TransferGrid(QWidget):
                     move[0], move[1] = move[1], move[0]
                     move[0] = move[0] + 1
                     move[1] = 9 - move[1] 
-            
-            print(paths)
+            print("[+]-- PATHS:  " + str(paths))
+
+
             grid = BlockGrid(self.canvas, LOGDRIVER, paths)
             self.canvas.addWidget(grid)
             self.canvas.setCurrentWidget(grid)
@@ -319,6 +339,16 @@ class TransferGrid(QWidget):
             # transfer_list = [[0, 3], [0, 7]]
             # moves = ship.transfer_list_off(transfer_list)
             # print(moves)
+
+    # def display(self):
+    #     if len(self.loadout)>0:
+    #         print(self.loadout)
+    #         return self.loadout
+    #     else:
+    #         print("Loadout Empty")
+    #     for item in ((self.manifestList.selectedItems())):
+    #         print(item.text())
+#-[:+:]==============================//Transfer CheckList//=====================================================================//
 
 
 class LoginPage(QWidget):
