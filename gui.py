@@ -15,7 +15,8 @@ import a_star as ast
 from log import LogDriver
 
 # SIZER= 1.15, 2, 1
-SIZER= 0.45
+SIZER= 1
+fontSIZER= .7
 OUTPUT_LOG_FILE = "output_log.txt"
 LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
 
@@ -36,27 +37,27 @@ class MainPage(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
         label = QLabel('Welcome, please select a task!')
-        label.setFont(QFont("Consolas", 35, QFont.Bold))
+        label.setFont(QFont("Consolas", 35*fontSIZER, QFont.Bold))
         label.setAlignment(Qt.AlignCenter)
         layout.addWidget(label)
         balance_button = QPushButton('Balance Task')
         balance_button.setFixedSize(300, 100)
-        balance_button.setFont(QFont("Consolas", 20, QFont.Bold))
+        balance_button.setFont(QFont("Consolas", 20*fontSIZER, QFont.Bold))
         balance_button.clicked.connect(self.start_balance)
         layout.addWidget(balance_button)
         transfer_button = QPushButton('Transfer Task')
         transfer_button.setFixedSize(300, 100)
-        transfer_button.setFont(QFont("Consolas", 20, QFont.Bold))
+        transfer_button.setFont(QFont("Consolas", 20*fontSIZER, QFont.Bold))
         transfer_button.clicked.connect(self.start_transfer)
         layout.addWidget(transfer_button)
         login_button = QPushButton('Login')
         login_button.setFixedSize(300, 100)
-        login_button.setFont(QFont("Consolas", 20, QFont.Bold))
+        login_button.setFont(QFont("Consolas", 20*fontSIZER, QFont.Bold))
         login_button.clicked.connect(self.login)
         layout.addWidget(login_button)
         logout_button = QPushButton('Logout')
         logout_button.setFixedSize(300, 100)
-        logout_button.setFont(QFont("Consolas", 20, QFont.Bold))
+        logout_button.setFont(QFont("Consolas", 20*fontSIZER, QFont.Bold))
         logout_button.clicked.connect(self.logout)
         layout.addWidget(logout_button)
 
@@ -463,10 +464,10 @@ class LoginPage(QWidget):
         layout = QVBoxLayout()
         text_box = QLineEdit()
         text_box.setFixedSize(1300, 200)
-        text_box.setFont(QFont('Consolas', 50))
+        text_box.setFont(QFont('Consolas', 50*fontSIZER))
         confirm_login = QPushButton('Log In')
         confirm_login.setMaximumSize(150, 50)
-        confirm_login.setFont(QFont('Consolas', 20))
+        confirm_login.setFont(QFont('Consolas', 20*fontSIZER))
         confirm_login.clicked.connect(lambda: self.login(text_box.text()))
         layout.addWidget(text_box)
         layout.addWidget(confirm_login)
@@ -485,9 +486,9 @@ class LogoutPage(QWidget):
         layout = QVBoxLayout()
         confirm_logout = QLabel('Log Out Successful')
         confirm_logout.setFixedSize(1500, 500)
-        confirm_logout.setFont(QFont('Consolas', 50))
+        confirm_logout.setFont(QFont('Consolas', 50*fontSIZER))
         home_button = QPushButton('Go back to home')
-        home_button.setFont(QFont('Consolas', 20))
+        home_button.setFont(QFont('Consolas', 20*fontSIZER))
         home_button.clicked.connect(self.backhome)
         layout.addWidget(confirm_logout)
         layout.addWidget(home_button)
@@ -504,10 +505,10 @@ class NotBalancePage(QWidget):
         layout = QVBoxLayout()
         message = QLabel('The Manifests is not balanced \nPlease select another manifest')
         message.setFixedSize(1800, 500)
-        message.setFont(QFont('Consolas', 50))
+        message.setFont(QFont('Consolas', 50*fontSIZER))
         
         home_button = QPushButton('Go back to home')
-        home_button.setFont(QFont('Consolas', 20))
+        home_button.setFont(QFont('Consolas', 20*fontSIZER))
         home_button.clicked.connect(self.backhome)
         
         layout.addWidget(message)
