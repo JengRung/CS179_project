@@ -217,47 +217,63 @@ class TransferGrid(QWidget):
             yRegex = r'\,(-?\d+(?:\,\d+)?)\]'
             
             # For reading the manifest file for transfer list ui (Done by Richard)
+            #[+]-- ---------------------------------------------------------------------------------------------------------------------------\\
             with open(manifest_Path, "r") as file:
                 for row in file:
-                    if "UNUSED" not in row and "NAN" not in row:
-                        l_idx+=1 
-                        itemEntry= row.strip()
-                        itemWeight= int(re.findall(wRegex, itemEntry)[0])
-                        itemX= re.findall(xRegex, itemEntry)
-                        itemY= re.findall(yRegex, itemEntry)
-                        itemXYW= (int(itemX[0]), int(itemY[0]), itemWeight)
+                    itemEntry= row.strip()
+                    tmp_Name= itemEntry[16+2:len(itemEntry)]
+                    l_idx+=1 
+                    itemWeight= int(re.findall(wRegex, itemEntry)[0])
+                    itemX= re.findall(xRegex, itemEntry)
+                    itemY= re.findall(yRegex, itemEntry)
+                    itemXYW= (int(itemX[0]), int(itemY[0]), itemWeight)
+                    if tmp_Name.upper()=="NAN":
+                        self.ship_container[int(itemXYW[0]) - 1][int(itemXYW[1]) - 1] = -1
+                    elif tmp_Name.upper()=="UNUSED":
+                        self.ship_container[int(itemXYW[0]) - 1][int(itemXYW[1]) - 1] = 0
+                    
+                    else:
                         self.unloadItems= np.append(self.unloadItems, np.reshape(itemXYW, (1, 3)), axis= 0)
-
-                        # print("new item.type: "+ str(type(itemXYW[0]))+','+ str( type(itemXYW[1]))+','+ str( type(itemXYW[2])))
-                        # print("new item(x,y,weight): "+ str(itemXYW)+ "-->unloadItems")
-                        # print(self.unloadItems)
-                            
-                        tmp_Name= itemEntry[16+2:19+2]
-
                         unloadStr= ("["+str(tmp_Name)+"] ==> xy(" + str(itemXYW[0])+","+ str(itemXYW[1])+ ") | {" + str(itemXYW[2]) + "}Kg")
                         self.manifestList.addItem(unloadStr)
-
-            # Loading the manifest to self.ship_container (Done by Justin)
-            with open(manifest_Path, "r") as file:
-                container_pattern = r'(\[.*?\]),\s({.*?}),\s(.*)'
-                for row in file:
-                    items = re.match(container_pattern, row)
-
-                    container_index, container_weight, container_name= items.groups()
-                    container_indexs = container_index.strip('[]').split(',')
-                    container_weight = int(container_weight.strip('{}'))
-                
-                    if container_name.upper() == "NAN":
-                        self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = -1
-                    
-                    elif container_name.upper() == "UNUSED":
-                        self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = 0
-            
-                    else:
-                        self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = cont.container(container_name, container_weight)
+                        #[+]-- Create Ship State based on manifest: 
+                        self.ship_container[int(itemXYW[0]) - 1][int(itemXYW[1]) - 1] = cont.container(tmp_Name, itemXYW[2])
                 self.ship_container.reverse()
                 for row in self.ship_container:
                     print(row)
+            #[+]-- ---------------------------------------------------------------------------------------------------------------------------//
+
+            # Loading the manifest to self.ship_container (Done by Justin)
+            # with open(manifest_Path, "r") as file:
+            #     container_pattern = r'(\[.*?\]),\s({.*?}),\s(.*)'
+            #     for row in file:
+            #         items = re.match(container_pattern, row)
+
+            #         container_index, container_weight, container_name= items.groups()
+            #         container_indexs = container_index.strip('[]').split(',')
+            #         container_weight = int(container_weight.strip('{}'))
+                
+            #         if container_name.upper() == "NAN":
+            #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = -1
+                    
+            #         elif container_name.upper() == "UNUSED":
+            #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = 0
+            
+            #         else:
+            #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = cont.container(container_name, container_weight)
+            #     self.ship_container.reverse()
+            #     for row in self.ship_container:
+            #         print(row)
+
+
+
+
+
+            
+
+
+
+
                     
     def loadItem(self):
         print("list accessed")
