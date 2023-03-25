@@ -58,6 +58,19 @@ class ship():
 
     def get_worst_case_balance():
         return 999
+    
+    def get_closest_spot(self):
+        #returns x,y of closest open spot using manhattan distance
+        x = 0
+        y = 0
+        min = len(self.containers) + len(self.containers[0])
+        for i in range(len(self.containers[0])):
+            dist = self.get_top_free_space(i)
+            if dist + i < min:
+                x = dist
+                y = i
+                min = dist+i
+        return(x,y)
 
     def append_moves(self,x1,y1,x2,y2):
         self.moves.append(Move(x1,y1,x2,y2))
@@ -94,7 +107,7 @@ class ship():
         try:
             node,i,j = search(problem,trace = True)
         except:
-            return []
+            return self
         return node.state
 
     def transfer_list_off(self,list):
@@ -132,10 +145,11 @@ class ship():
                 return
         moves.append(Move(x,y,-3,-3))
 
-    def transfer_list_on(num: int):
-        #implement
-        while (num > 0):
-            pass
+    def transfer_list_on(self,cont: container):
+        (x,y) = self.get_closest_spot()
+        move = Move(0,0,x,y)
+        self.containers[x][y] = cont
+        return self.shortest_path(move)
 
     def get_container(self,x,y):
         return self.containers[x][y]
