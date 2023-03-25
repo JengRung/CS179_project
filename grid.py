@@ -1,11 +1,12 @@
 from PySide2.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget, QLineEdit, QTextEdit
 from PySide2.QtCore import QTimer
 from PySide2.QtGui import QFont
-
+import os
 from buffer import BufferWindow
 import container as cont
 
 SIZER= 1
+fontSIZER= .6
 
 # TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2),(-2,-2)],
 #                 [(3,7),(3,8),(3,9),(3,10),(4,10),(5,10),(6,10),(6,9),(6,8)],
@@ -66,8 +67,8 @@ class BlockGrid(QWidget):
         buffer_block.setText('Buffer')
         truck_block.setText('Truck')
 
-        buffer_block.setFont(QFont("Arial", 12, QFont.Bold))
-        truck_block.setFont(QFont("Arial", 12, QFont.Bold))
+        buffer_block.setFont(QFont("Consolas", 12, QFont.Bold))
+        truck_block.setFont(QFont("Consolas", 12, QFont.Bold))
         
         buffer_block.setFixedSize(block_size, block_size)
         truck_block.setFixedSize(block_size, block_size)
@@ -123,26 +124,26 @@ class BlockGrid(QWidget):
         
         # Add total cost label to the layout
         total_cost = QLabel("Total Cost: " + str(sum(self.costs)) + " mins")
-        total_cost.setFont(QFont("Arial", 20, QFont.Bold))
+        total_cost.setFont(QFont("Consolas", 20*fontSIZER, QFont.Bold))
         total_cost.setStyleSheet("border: 1px solid black; ")
         total_cost.setFixedSize(400, 150)
         
         # Add button to the layout
         next_button = QPushButton('Next')
         next_button.setFixedSize(400, 150)
-        next_button.setFont(QFont("Arial", 20, QFont.Bold))
+        next_button.setFont(QFont("Consolas", 20*fontSIZER, QFont.Bold))
         next_button.clicked.connect(self.next_path)
         
         # Add comment label to the layout
         comment_box = QTextEdit()
         comment_box.setFixedSize(400, 400)
-        comment_box.setFont(QFont("Arial", 20, QFont.Bold))
+        comment_box.setFont(QFont("Consolas", 20*fontSIZER, QFont.Bold))
         comment_box.setPlaceholderText("Enter your comment here...")
         
         # Add a conform comment button
         conform_comment_button = QPushButton('Add Comment')
         conform_comment_button.setFixedSize(400, 150)
-        conform_comment_button.setFont(QFont("Arial", 20, QFont.Bold))
+        conform_comment_button.setFont(QFont("Consolas", 20*fontSIZER, QFont.Bold))
         conform_comment_button.clicked.connect(lambda: self.add_comment(comment_box.toPlainText()))
         
         # Button holder layout
@@ -257,12 +258,12 @@ class BlockGrid(QWidget):
             for item in exist_contains:
                 if (row, col) == (item[1][0], item[1][1]):
                     label.setText(item[0])
-                    label.setFont(QFont("Arial", 12, QFont.Bold))
+                    label.setFont(QFont("Consolas", 12, QFont.Bold))
                     
             for item in empty_contains:
                 if (row, col) == (item[0], item[1]):
                     label.setText("")
-                    label.setFont(QFont("Arial", 12, QFont.Bold))
+                    label.setFont(QFont("Consolas", 12, QFont.Bold))
 
     # This function update all NAN block to black color, based on the input ship manifest
     def update_NAN_blocks_color(self):
@@ -388,20 +389,29 @@ class FinishPage(QWidget):
 
         # Add a QLabel to display the finish message
         finish_message = QLabel("Task is done! Remember to send the manifest to the ship company.")
-        finish_message.setFont(QFont("Arial", 25, QFont.Bold))
+        finish_message.setFont(QFont("Consolas", 25*fontSIZER, QFont.Bold))
         finish_page_layout.addWidget(finish_message)
 
         # Add a QPushButton to go back to the main page
         back_button = QPushButton("Back to home page")
         back_button.setFixedSize(800, 100)
-        back_button.setFont(QFont("Arial", 20, QFont.Bold))
+        back_button.setFont(QFont("Consolas", 20*fontSIZER, QFont.Bold))
         back_button.clicked.connect(self.go_back)
         finish_page_layout.addWidget(back_button)
+
+
+
         
         # Generate manifest
-        print("Generating manifest...")
+        print("Generating manifest--> "+ str(manifest_name))
         print(self.container)
-        output_manifest_name = manifest_name.replace(".txt", "_out.txt")
+        output_manifest_name = manifest_name.replace(".txt", "_OUTBOUND.txt")
+
+        #[+]--Gener------#[+]--------------------------------------\\
+        # absPath= os.path.realpath(__file__)
+        # thisPath= os.path.dirname(absPath)
+        thisPath= (r"C:\Users\richa\Desktop")
+        output_manifest_name= os.path.join(thisPath, output_manifest_name)
         
         with open(output_manifest_name, "w") as f:
             for x in range(len(self.container)-1, -1, -1):
