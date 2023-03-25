@@ -5,6 +5,8 @@ from PySide2.QtGui import QFont
 from buffer import BufferWindow
 import container as cont
 
+SIZER= 1
+
 # TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2),(-2,-2)],
 #                 [(3,7),(3,8),(3,9),(3,10),(4,10),(5,10),(6,10),(6,9),(6,8)],
 #                 [(1,5),(1,6),(1,7),(1,8),(1,9),(100,100),(200,100),(300,100),(400,100)],
@@ -34,7 +36,7 @@ class BlockGrid(QWidget):
         cols = 10
         
         # Set the default block_size to 96
-        block_size = 96
+        block_size = 96*SIZER
         
         self.parent_canvas = parent_canvas
         
@@ -70,7 +72,7 @@ class BlockGrid(QWidget):
         buffer_block.setFixedSize(block_size, block_size)
         truck_block.setFixedSize(block_size, block_size)
         
-        block_style = 'border: 1px solid black; '
+        block_style = 'border: 7px solid black; '
         buffer_block.setStyleSheet(block_style)
         truck_block.setStyleSheet(block_style)
         

@@ -14,12 +14,14 @@ import container as cont
 import a_star as ast
 from log import LogDriver
 
-
+# SIZER= 1.15, 2, 1
+SIZER= 0.4
 OUTPUT_LOG_FILE = "output_log.txt"
 LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
 
 indexTionary= {
     'main': 0,
+    'home': 0,
     'login': 1,
     'transfer': 2,
     'logout': 3,
@@ -159,6 +161,16 @@ class MainPage(QWidget):
         self.ship_container = [[0 for x in range(12)] for y in range(9)]
 
     def start_transfer(self):
+        # block_size = 64
+        # sizer= 0.7
+        # grid = TransferGrid(12, 9, 24, 4, block_size*sizer)
+        # self.canvas.addWidget(grid)
+        # self.canvas.setCurrentWidget(grid)
+        
+        # transApp= QWidget()
+        # self.setCentralWidget(transApp)
+        # window= QVBoxLayout(transApp)
+
         self.canvas.setCurrentIndex(indexTionary['transfer']) 
         
     def login(self):
@@ -168,7 +180,7 @@ class MainPage(QWidget):
         self.canvas.setCurrentIndex(3)
 
 
-#-[:+:]===============================Transfer CheckList =====================================================================\\
+#-[:+:]===============================Transfer CheckList ==========================================================================================\\
 class TransferGrid(QWidget):
     #---TOdo--:
         #- [+] Process input into numbers for output into A* algo
@@ -176,7 +188,7 @@ class TransferGrid(QWidget):
             # - [+] unload output: ( x, y, weight )
         #- [ ] refactor for better readabilty
         #- [+] Parse manifest weiight and coordinates
-        #- [ ] Parse panifest item names
+        #- [+] Parse panifest item names
         #- [+] Replace manifest list with Multi-select
 #     - [+] Add page for the transfer task
 #     - [ ] User log comments
@@ -184,13 +196,17 @@ class TransferGrid(QWidget):
 #     - [+] manifest checkist for transfer task
 #     - [ ] display instructions for moving containers
 #     - [ ] reminder prompt
-#     - [ ] Generat new Manifest
+#     - [+] Generat new Manifest
+#     - [+] UNload phase
+#     - [ ] load phase
+#     - [ ] Fix Login
         
     def __init__(self, canvas, parent=None):
         super().__init__(parent)
+        self.manifest_name= None
         self.canvas= canvas
 
-        self.loadout= np.empty((0,2))
+        self.newItems= np.empty((0,2))
         self.unloadItems= np.empty((0,3))
         
         self.ship_container = [[0 for x in range(12)] for y in range(9)]
@@ -198,15 +214,16 @@ class TransferGrid(QWidget):
         #[::]-- Holds the two columns in a single box:---\\
         #--[[load][unload]]--------------------------\\
         colContainer = QtWidgets.QHBoxLayout(self)
+
+        backCol_L= QVBoxLayout()
+        colContainer.addLayout(backCol_L)
+
+        self.unloadCol_R= QVBoxLayout()
+        colContainer.addLayout(self.unloadCol_R)
         
         loadCol= QVBoxLayout()
         colContainer.addLayout(loadCol)
 
-        self.unloadCol_R= QVBoxLayout()
-        colContainer.addLayout(self.unloadCol_R)
-
-        subCol_R= QVBoxLayout()
-        colContainer.addLayout(subCol_R)
 
         #[+]:-- load column is for data entry--------------------------\\
         #-----------------------------------\\
@@ -218,39 +235,46 @@ class TransferGrid(QWidget):
         loadBtn = QtWidgets.QPushButton("Load Item", self)
         self.loadList= QtWidgets.QListWidget(self)
         loadCol.addWidget(QLabel("Enter Name and Weight of items to be Loaded: "))
+        self.loadPhaseBtn = QtWidgets.QPushButton("Generate Instructions ", self)
         loadBtn.clicked.connect(self.loadItem)
         inputSect_L.addWidget(itemLabel)
         inputSect_L.addWidget(self.inputName)
         inputSect_L.addWidget(self.weightLabel)
         inputSect_L.addWidget(self.inputWeight)
+        self.inputWeight.returnPressed.connect(self.loadItem)
         inputSect_L.addWidget(loadBtn)
         loadCol.addLayout(inputSect_L)
         loadCol.addWidget(self.loadList)
+        self.loadPhaseBtn.clicked.connect(self.loadPhase)
+        loadCol.addWidget(self.loadPhaseBtn)
 
 
         #[+]:-- unload column reads from the manifest and makes list-----------\\
         self.maniBtn = QtWidgets.QPushButton("Select Items From Manifest", self)
         self.manifestList= QtWidgets.QListWidget(self)
         self.manifestList.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.unloadBtn = QtWidgets.QPushButton("Generate Instructions for Unloading", self)
         self.unloadCol_R.addWidget(QLabel("Select all items to unload: "))
         self.maniBtn.clicked.connect(self.manifest)
         self.unloadCol_R.addWidget(self.maniBtn)
         self.unloadCol_R.addWidget(self.manifestList)
+        self.unloadBtn.clicked.connect(self.unloadPhase)
+        self.unloadCol_R.addWidget(self.unloadBtn)
+
         self.qBtnGroup= QtWidgets.QButtonGroup()
         # self.unloadCol_R.addWidget(self.qBtnGroup)
         # self.scrollBox = QtWidgets.QScrollArea(self)
 
 
-
-
-        #[+]:-- third colum just for submit button------------------------------\\
-        self.subBtn = QtWidgets.QPushButton("Generate Instructions", self)
-        self.subBtn.clicked.connect(self.getLoadout)
-        subCol_R.addWidget(self.subBtn)
+        #[+]:-- third colum just for back button------------------------------\\
+        self.backBtn = QtWidgets.QPushButton("< Home", self)
+        self.backBtn.clicked.connect(self.go_back)
+        backCol_L.addWidget(self.backBtn)
         
     
     def manifest(self):
         manifest_Path= fd.askopenfilename()
+        self.manifest_name = manifest_Path.split("/")[-1]
         print("manifest_Path: "+ str(manifest_Path))
         if len(manifest_Path)>0:
             self.manifestList.clear()
@@ -258,7 +282,6 @@ class TransferGrid(QWidget):
             wRegex = r'\{(-?\d+(?:\.\d+)?)\}'
             xRegex = r'\[(-?\d+(?:\,\d+)?)\,'
             yRegex = r'\,(-?\d+(?:\,\d+)?)\]'
-            
             # For reading the manifest file for transfer list ui (Done by Richard)
             #[+]-- ---------------------------------------------------------------------------------------------------------------------------\\
             with open(manifest_Path, "r") as file:
@@ -285,44 +308,29 @@ class TransferGrid(QWidget):
                 for row in self.ship_container:
                     print(row)
             #[+]-- ---------------------------------------------------------------------------------------------------------------------------//
-
             # Loading the manifest to self.ship_container (Done by Justin)
             # with open(manifest_Path, "r") as file:
             #     container_pattern = r'(\[.*?\]),\s({.*?}),\s(.*)'
             #     for row in file:
             #         items = re.match(container_pattern, row)
-
             #         container_index, container_weight, container_name= items.groups()
             #         container_indexs = container_index.strip('[]').split(',')
             #         container_weight = int(container_weight.strip('{}'))
-                
             #         if container_name.upper() == "NAN":
             #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = -1
-                    
             #         elif container_name.upper() == "UNUSED":
             #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = 0
-            
             #         else:
             #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = cont.container(container_name, container_weight)
             #     self.ship_container.reverse()
             #     for row in self.ship_container:
             #         print(row)
-
-
-
-
-
-            
-
-
-
-
                     
     def loadItem(self):
-        print("list accessed")
+        # print("list accessed")
         itemName = self.inputName.text()
         itemWeight= self.inputWeight.text()
-        listInput = "+ ["+itemName+"     :     "+ itemWeight+ "] ==>[SHIP]"
+        listInput = "+ [ "+itemName+"     :     "+ itemWeight+ " ] ==>[SHIP]"
         if len(listInput)+len(itemWeight)>=2:
             self.inputName.clear()
             self.inputWeight.clear()
@@ -330,26 +338,24 @@ class TransferGrid(QWidget):
                 if (int(itemWeight)>=0): 
                     self.loadList.addItem(listInput)
                     newItem= np.reshape((itemName, itemWeight), (1,2))
-                    self.loadout= np.append(self.loadout, newItem, axis=0)
-                    # print(str(newItem)+ " --> " + str(self.loadout))
-                    # print(str(self.loadout.shape)+ "\n")
+                    self.newItems= np.append(self.newItems, newItem, axis=0)
+                    # print(str(itemName)+ " --> " + str(self.newItems))
+                    # print(str(self.newItems.shape)+ "\n")
                 else: print('Invalid Weight entry')
             else: print("Invalid Name")
         else: print("Missing Required Field")
 
     # This fx should maybe modified to use the A* algo to create the instructions
-    def getLoadout(self):
-        if len(self.loadout)+len(self.manifestList.selectedItems())>0:
+    def unloadPhase(self):
+        if len(self.manifestList.selectedItems())>0:
             # transfer_list = []
-            # for item in self.loadout:
+            # for item in self.newItems:
             #     for x in range(len(self.ship_container)-1):
             #         for y in range(len(self.ship_container[x])-1):
             #             if self.ship_container[x][y] != -1 and self.ship_container[x][y] != 0:
             #                 if item[0] == self.ship_container[x][y].name:
             #                     print(self.ship_container[x][y].name, (x, y))                
             #                     transfer_list.append([x, y])
-
-
             #[+]-- Populate transfer_list with items that the user has selected to UNload fro the ship------\
             transfer_list= []
             print('\nSelected For Unloading: ')
@@ -360,37 +366,77 @@ class TransferGrid(QWidget):
                 # transfer_list.append((x,y))
                 transfer_list.append([9-x,y-1])
                 # transfer_list= [[7,0],[7,1]]
-            print("        [OUTGOING]:=======> "+ str(transfer_list))
+            print("        [OUTGOING]:======> "+ str(transfer_list))
             #-----------------------------------------------------------------------------------------------/
-
             
             ship = cont.ship(self.ship_container)
             balance_moves = ship.transfer_list_off(transfer_list)
             paths = []
-            print(balance_moves)
+            print("Unload Moves: "+ str(balance_moves))
             for move in balance_moves:
                 paths.append(ship.shortest_path(move))
-            
             # reverse x, y cords
             for path in paths:
                 for move in path:
                     move[0], move[1] = move[1], move[0]
                     move[0] = move[0] + 1
                     move[1] = 9 - move[1] 
-            
-            print(paths)
-            grid = BlockGrid(self.canvas, LOGDRIVER, paths)
+                print("unload_PATH: "+ str(path))
+
+            grid = BlockGrid(parent_canvas = self.canvas, 
+                         logdriver = LOGDRIVER, 
+                         input_path = paths, 
+                         container_status = self.ship_container, 
+                         manifest_name = self.manifest_name)
             self.canvas.addWidget(grid)
             self.canvas.setCurrentWidget(grid)
             
-            return self.loadout
+            return self.newItems
         else:
-            print("Fields are empty!")
+            print("ERROR: No Items Selected! Load the manifest, and Click on the Items you want to load")
+
             
-            # ship = cont.ship(self.ship_container)
-            # transfer_list = [[0, 3], [0, 7]]
-            # moves = ship.transfer_list_off(transfer_list)
-            # print(moves)
+    def loadPhase(self):
+        # def __init__(self, name: str, mass: int, row : int = -1, col : int = -1) -> None:
+        # cont.container(container_name, container_weight)
+        if len(self.newItems)>0:
+            ship = cont.ship(self.ship_container)
+            paths= []
+            for item in self.newItems:
+                # print(item)
+                # print(type(item[1]))
+                name= item[0]
+                weight= int(item[1])
+                newBox= cont.container(name, weight)
+                shortestPath= ship.transfer_list_on(newBox)
+                print(shortestPath)
+                paths.append(shortestPath)
+            for path in paths:
+                for move in path:
+                    move[0], move[1] = move[1], move[0]
+                    move[0] = move[0] + 1
+                    move[1] = 9 - move[1] 
+                print("load_PATH: "+ str(path))
+        else:
+            print("Warning: You have items to load")
+        
+        grid = BlockGrid(parent_canvas = self.canvas, 
+            logdriver = LOGDRIVER, 
+            input_path = paths, 
+            container_status = self.ship_container, 
+            manifest_name = self.manifest_name)
+        
+        self.canvas.addWidget(grid)
+        self.canvas.setCurrentWidget(grid)
+            
+        
+
+    def go_back(self):
+        self.canvas.setCurrentIndex(indexTionary['home'])
+
+    def thistTooShall(self):
+        pass
+#-[:+:]===============================Transfer CheckList ==========================================================================================//
 
 
 class LoginPage(QWidget):
@@ -484,7 +530,11 @@ class Canvas(QWidget):
         self.setLayout(layout)
 
 
-        window_size = (2000, 1000)
+        # rez= app.primaryScreen().size()
+        # # window_size = (16 * 96*SIZER*1.1, 9 * 96*SIZER + 50)
+        # window_size = (rez.width()*SIZER, rez.height()*SIZER)
+        # self.setFixedSize(*window_size)
+        window_size = (2000*SIZER, 1000*SIZER)
         self.setFixedSize(*window_size)
 
 if __name__ == '__main__':
