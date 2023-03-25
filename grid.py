@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide2.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget, QLineEdit, QTextEdit
 from PySide2.QtCore import QTimer
 from PySide2.QtGui import QFont
 
@@ -17,12 +17,13 @@ TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2),(-2,-2)],
                 [(11,3), (10,3), (9,3), (8,3), (7,3), (6,3), (5,3), (5,4), (5,5), (5,6), (5,7), (5,8), (5,9)]]
 
 class BlockGrid(QWidget):
-    def __init__(self, parent_canvas, driver, input_path, container_status, parent=None):
+    def __init__(self, parent_canvas, logdriver, input_path, container_status, manifest_name, parent=None):
         super().__init__(parent)
         
         self.path = input_path
-        self.driver = driver
+        self.logdriver = logdriver
         self.container_status = container_status
+        self.manifest_name = manifest_name
         
         
         self.costs = cost_calculator(self.path)
@@ -122,17 +123,32 @@ class BlockGrid(QWidget):
         total_cost = QLabel("Total Cost: " + str(sum(self.costs)) + " mins")
         total_cost.setFont(QFont("Arial", 20, QFont.Bold))
         total_cost.setStyleSheet("border: 1px solid black; ")
+        total_cost.setFixedSize(400, 150)
         
         # Add button to the layout
         next_button = QPushButton('Next')
-        next_button.setFixedSize(300, 150)
+        next_button.setFixedSize(400, 150)
         next_button.setFont(QFont("Arial", 20, QFont.Bold))
         next_button.clicked.connect(self.next_path)
+        
+        # Add comment label to the layout
+        comment_box = QTextEdit()
+        comment_box.setFixedSize(400, 400)
+        comment_box.setFont(QFont("Arial", 20, QFont.Bold))
+        comment_box.setPlaceholderText("Enter your comment here...")
+        
+        # Add a conform comment button
+        conform_comment_button = QPushButton('Add Comment')
+        conform_comment_button.setFixedSize(400, 150)
+        conform_comment_button.setFont(QFont("Arial", 20, QFont.Bold))
+        conform_comment_button.clicked.connect(lambda: self.add_comment(comment_box.toPlainText()))
         
         # Button holder layout
         buttons_layout = QVBoxLayout()
         buttons_layout.addWidget(total_cost)
         buttons_layout.addWidget(next_button)
+        buttons_layout.addWidget(comment_box)
+        buttons_layout.addWidget(conform_comment_button)
         animation_page_layout.addLayout(buttons_layout,3)
         
         
@@ -286,8 +302,9 @@ class BlockGrid(QWidget):
     def next_path(self):
         '''
         Updateing log:
-        1. If path end at -2, -2: container is offloaded, get the item from path start
-        2. If path start at -2, -2: container is onloaded, get the item from path end
+        1. If path end at -2, -2: container is offloaded
+        2. If path start at -2, -2: container is onloaded
+        3. If path doesn't start or end at -2, -2: container is moving inside the ship, get the item from path start
         '''
         def reverse_coord(coord):
             coord[0] = coord[0] - 1
@@ -296,14 +313,21 @@ class BlockGrid(QWidget):
         
         
         if self.path[self.finish_path][-1] == (-2, -2):
-            container_coord = self.path[self.finish_path][0]
+            container_coord = self.path[self.finish_path][0].copy()
             reverse_coord(container_coord)
-            self.driver.offload(self.container_status[container_coord[0]][container_coord[1]])
+            self.logdriver.offload(self.container_status[container_coord[0]][container_coord[1]].name)
         
         elif self.path[self.finish_path][0] == (-2, -2):
-            container_coord = self.path[self.finish_path][-1]
+            container_coord = self.path[self.finish_path][-1].copy()
             reverse_coord(container_coord)
-            self.driver.onload(self.container_status[container_coord[0]][container_coord[1]])
+            self.logdriver.onload(self.container_status[container_coord[0]][container_coord[1]].name)
+        
+        elif self.path[self.finish_path][0] != (-2, -2) and self.path[self.finish_path][-1] != (-2, -2):
+            container_coord = self.path[self.finish_path][0].copy()
+            start_coord = container_coord.copy()
+            end_coord = self.path[self.finish_path][-1].copy()
+            reverse_coord(container_coord)
+            self.logdriver.moveInsideShip(self.container_status[container_coord[0]][container_coord[1]].name, start_coord, end_coord)
         
         # Coordinate for update container status
         old_coord = self.path[self.finish_path][0]
@@ -314,7 +338,7 @@ class BlockGrid(QWidget):
         self.path_index = 0
         
         if self.finish_path == len(self.path):
-            finish_page = FinishPage(self.parent_canvas)
+            finish_page = FinishPage(self.parent_canvas, self.logdriver, self.manifest_name)
             # Set the finish page as index 5
             self.parent_canvas.insertWidget(5, finish_page)
             self.parent_canvas.setCurrentIndex(5)
@@ -344,9 +368,12 @@ class BlockGrid(QWidget):
     def show_Buffer_window(self):
         self.Buffer_window = BufferWindow()
         self.Buffer_window.show()
+        
+    def add_comment(self, comment):
+        self.logdriver.comment(comment)
 
 class FinishPage(QWidget):
-    def __init__(self, parent_canvas, parent=None):
+    def __init__(self, parent_canvas, logdriver, manifest_name, parent=None):
         super().__init__(parent)
         
         self.parent_canvas = parent_canvas
@@ -366,6 +393,10 @@ class FinishPage(QWidget):
         back_button.setFont(QFont("Arial", 20, QFont.Bold))
         back_button.clicked.connect(self.go_back)
         finish_page_layout.addWidget(back_button)
+        
+        # Write to log when finish cycle and generate new manifest
+        logdriver.finishCycle(manifest_name)
+        
 
     def go_back(self):
         self.parent_canvas.setCurrentIndex(0)
