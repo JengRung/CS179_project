@@ -22,6 +22,7 @@ indexTionary= {
     'main': 0,
     'login': 1,
     'transfer': 2,
+    'logout': 3,
 }
 
 class MainPage(QWidget):
@@ -59,15 +60,24 @@ class MainPage(QWidget):
         login_button.setFont(QFont("Arial", 20, QFont.Bold))
         login_button.clicked.connect(self.login)
         layout.addWidget(login_button)
+        
+        # Add a button to logout
+        logout_button = QPushButton('Logout')
+        logout_button.setFixedSize(300, 100)
+        logout_button.setFont(QFont("Arial", 20, QFont.Bold))
+        logout_button.clicked.connect(self.logout)
+        layout.addWidget(logout_button)
 
     #[:+]-- changed 'start_app' to start balance, also added 'start_transfer;  one func
     def start_balance(self):
         # Create the block grid and add it to the stacked widget
         manifest_Path= fd.askopenfilename()
+        manifest_name = manifest_Path.split("/")[-1]
         print("manifest_Path: "+ str(manifest_Path))
         # Loading the manifest to self.ship_container (Done by Justin)
         with open(manifest_Path, "r") as file:
             container_pattern = r'(\[.*?\]),\s({.*?}),\s(.*)'
+            container_cnt = 0
             for row in file:
                 items = re.match(container_pattern, row)
 
@@ -83,10 +93,14 @@ class MainPage(QWidget):
         
                 else:
                     self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = cont.container(container_name, container_weight)
+                    container_cnt += 1
         self.ship_container.reverse()
         
-        for row in self.ship_container:
-            print(row)
+        # Write to the log file when loading manifest
+        LOGDRIVER.openManifest(manifest_name, container_cnt)
+        
+        # for row in self.ship_container:
+        #     print(row)
         
         ship = cont.ship(self.ship_container)
         new_ship = ship.balance(ast.search,ast.balance(ship))
@@ -109,7 +123,12 @@ class MainPage(QWidget):
                 
         # print("New ship: ", new_ship)
         
-        grid = BlockGrid(self.canvas, LOGDRIVER, paths, self.ship_container)
+        grid = BlockGrid(parent_canvas = self.canvas, 
+                         logdriver = LOGDRIVER, 
+                         input_path = paths, 
+                         container_status = self.ship_container, 
+                         manifest_name = manifest_name)
+        
         self.canvas.addWidget(grid)
         self.canvas.setCurrentWidget(grid)
         
@@ -117,20 +136,13 @@ class MainPage(QWidget):
         self.ship_container = [[0 for x in range(12)] for y in range(9)]
 
     def start_transfer(self):
-        # block_size = 64
-        # sizer= 0.7
-        # grid = TransferGrid(12, 9, 24, 4, block_size*sizer)
-        # self.canvas.addWidget(grid)
-        # self.canvas.setCurrentWidget(grid)
-        
-        # transApp= QWidget()
-        # self.setCentralWidget(transApp)
-        # window= QVBoxLayout(transApp)
-
         self.canvas.setCurrentIndex(indexTionary['transfer']) 
         
     def login(self):
         self.canvas.setCurrentIndex(1) 
+        
+    def logout(self):
+        self.canvas.setCurrentIndex(3)
 
 
 #-[:+:]===============================Transfer CheckList =====================================================================\\
@@ -364,8 +376,11 @@ class LoginPage(QWidget):
         self.canvas = canvas
         layout = QVBoxLayout()
         text_box = QLineEdit()
+        text_box.setFixedSize(1300, 200)
+        text_box.setFont(QFont('Arial', 50))
         confirm_login = QPushButton('Log In')
         confirm_login.setMaximumSize(150, 50)
+        confirm_login.setFont(QFont('Arial', 20))
         confirm_login.clicked.connect(lambda: self.login(text_box.text()))
         layout.addWidget(text_box)
         layout.addWidget(confirm_login)
@@ -375,6 +390,29 @@ class LoginPage(QWidget):
             print(username)
             LOGDRIVER.login(username)
             self.canvas.setCurrentIndex(0)
+                    
+                    
+class LogoutPage(QWidget):
+    def __init__(self, canvas, parent=None):
+        super().__init__(parent)
+        self.canvas = canvas
+        layout = QVBoxLayout()
+        confirm_logout = QLabel('Log Out Successful')
+        confirm_logout.setFixedSize(1500, 500)
+        confirm_logout.setFont(QFont('Arial', 50))
+        
+        home_button = QPushButton('Go back to home')
+        home_button.setFont(QFont('Arial', 20))
+        home_button.clicked.connect(self.backhome)
+        
+        layout.addWidget(confirm_logout)
+        layout.addWidget(home_button)
+        self.setLayout(layout)
+        
+    def backhome(self):
+        LOGDRIVER.logout()
+        self.canvas.setCurrentIndex(0)
+                    
                     
 class Canvas(QWidget):
     def __init__(self, parent=None):
@@ -391,6 +429,9 @@ class Canvas(QWidget):
         #[+]--
         transPage= TransferGrid(self.stacked_widget)
         self.stacked_widget.addWidget(transPage)
+        
+        logout_page = LogoutPage(self.stacked_widget)
+        self.stacked_widget.addWidget(logout_page)
 
         layout = QVBoxLayout()
         layout.addWidget(self.stacked_widget)
