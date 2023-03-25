@@ -15,7 +15,7 @@ import a_star as ast
 from log import LogDriver
 
 # SIZER= 1.15, 2, 1
-SIZER= 1
+SIZER= 1.15
 fontSIZER= .6
 OUTPUT_LOG_FILE = "output_log.txt"
 LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
@@ -403,6 +403,7 @@ class TransferGrid(QWidget):
         else:
             msg= ("Warning: No Items Selected! Load the manifest, and Click on all the Items you want to load")
             self.popupPrompt(msg)
+            LOGDRIVER.error(msg)
            
 
             
@@ -430,6 +431,7 @@ class TransferGrid(QWidget):
         else:
             msg= ("Warning: You have no items to load.\n Please Enter Some Items")
             self.popupPrompt(msg)
+            LOGDRIVER.error(msg)
         
         grid = BlockGrid(parent_canvas = self.canvas, 
             logdriver = LOGDRIVER, 
