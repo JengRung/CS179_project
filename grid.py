@@ -135,22 +135,22 @@ class BlockGrid(QWidget):
         next_button.clicked.connect(self.next_path)
         
         # Add comment label to the layout
-        comment_box = QTextEdit()
-        comment_box.setFixedSize(400, 400)
-        comment_box.setFont(QFont("Consolas", 20*fontSIZER, QFont.Bold))
-        comment_box.setPlaceholderText("Enter your comment here...")
+        self.comment_box = QTextEdit()
+        self.comment_box.setFixedSize(400, 400)
+        self.comment_box.setFont(QFont("Consolas", 20*fontSIZER, QFont.Bold))
+        self.comment_box.setPlaceholderText("Enter your comment here...")
         
         # Add a conform comment button
         conform_comment_button = QPushButton('Add Comment')
         conform_comment_button.setFixedSize(400, 150)
         conform_comment_button.setFont(QFont("Consolas", 20*fontSIZER, QFont.Bold))
-        conform_comment_button.clicked.connect(lambda: self.add_comment(comment_box.toPlainText()))
+        conform_comment_button.clicked.connect(lambda: self.add_comment(self.comment_box.toPlainText()))
         
         # Button holder layout
         buttons_layout = QVBoxLayout()
         buttons_layout.addWidget(total_cost)
         buttons_layout.addWidget(next_button)
-        buttons_layout.addWidget(comment_box)
+        buttons_layout.addWidget(self.comment_box)
         buttons_layout.addWidget(conform_comment_button)
         animation_page_layout.addLayout(buttons_layout,3)
         
@@ -375,6 +375,7 @@ class BlockGrid(QWidget):
         
     def add_comment(self, comment):
         self.logdriver.comment(comment)
+        self.comment_box.clear()
 
 class FinishPage(QWidget):
     def __init__(self, parent_canvas, logdriver, manifest_name, container, parent=None):
