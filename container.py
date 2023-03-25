@@ -123,10 +123,10 @@ class ship():
         return self._can(containers,0,0,0)
         
     def _can(self,containers,lsum,rsum,i) -> bool:
-        if (i == len(containers)-1):
+        if (i == len(containers)):
             return (max(lsum,rsum) <= 1.1*min(lsum,rsum))
-        for j in range(i,len(containers)):
-            return self._can(containers,lsum+containers[j].mass,rsum,i+1) or self._can(containers,lsum,rsum+containers[j].mass,i+1)
+        else:
+            return self._can(containers,lsum + containers[i].mass , rsum ,i+1) or self._can(containers,lsum,rsum+containers[i].mass,i+1)
 
 
     def balance(self,search,problem):
