@@ -136,7 +136,7 @@ class BlockGrid(QWidget):
         animation_page_layout.addLayout(buttons_layout,3)
         
         
-        self.setFixedSize(25 * block_size, 10 * block_size)
+        self.setFixedSize(20 * block_size, 10 * block_size)
         
         # Call the buffer window if needed, this only run for the first path
         if self.buffer_require():
@@ -284,6 +284,28 @@ class BlockGrid(QWidget):
         self.container_status[old_coord[0]][old_coord[1]], self.container_status[new_coord[0]][new_coord[1]] = self.container_status[new_coord[0]][new_coord[1]], self.container_status[old_coord[0]][old_coord[1]]
         
     def next_path(self):
+        '''
+        Updateing log:
+        1. If path end at -2, -2: container is offloaded, get the item from path start
+        2. If path start at -2, -2: container is onloaded, get the item from path end
+        '''
+        def reverse_coord(coord):
+            coord[0] = coord[0] - 1
+            coord[1] = 9 - coord[1]
+            coord[0], coord[1] = coord[1], coord[0]
+        
+        
+        if self.path[self.finish_path][-1] == (-2, -2):
+            container_coord = self.path[self.finish_path][0]
+            reverse_coord(container_coord)
+            self.driver.offload(self.container_status[container_coord[0]][container_coord[1]])
+        
+        elif self.path[self.finish_path][0] == (-2, -2):
+            container_coord = self.path[self.finish_path][-1]
+            reverse_coord(container_coord)
+            self.driver.onload(self.container_status[container_coord[0]][container_coord[1]])
+        
+        # Coordinate for update container status
         old_coord = self.path[self.finish_path][0]
         new_coord = self.path[self.finish_path][-1]
         self.update_container_status_move(old_coord, new_coord)
@@ -334,7 +356,7 @@ class FinishPage(QWidget):
         self.setLayout(finish_page_layout)
 
         # Add a QLabel to display the finish message
-        finish_message = QLabel("Transfer task is done! Remember to send the manifest to the ship company.")
+        finish_message = QLabel("Task is done! Remember to send the manifest to the ship company.")
         finish_message.setFont(QFont("Arial", 25, QFont.Bold))
         finish_page_layout.addWidget(finish_message)
 
