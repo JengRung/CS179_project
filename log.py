@@ -27,10 +27,18 @@ class LogDriver:
         time = datetime.now().replace(second=0, microsecond=0).strftime("%Y-%m-%d %H:%M")
         self.log(f"{time}  {container} is onloaded")
         
-    def openManifest(self, manifest):
+    def openManifest(self, manifest, container_cnt):
         time = datetime.now().replace(second=0, microsecond=0).strftime("%Y-%m-%d %H:%M")
-        self.log(f"{time}  {manifest} is opened")
+        self.log(f"{time}  {manifest} is opened, there are {container_cnt} containers on the ship")
         
     def finishCycle(self, manifest):
         time = datetime.now().replace(second=0, microsecond=0).strftime("%Y-%m-%d %H:%M")
         self.log(f"{time}  Finished a Cycle. Manifest {manifest} was written to desktop, and a reminder pop-up to operator to send file was displayed.")
+        
+    def moveInsideShip(self, container, from_location, to_location):
+        time = datetime.now().replace(second=0, microsecond=0).strftime("%Y-%m-%d %H:%M")
+        self.log(f"{time}  {container} is moved from {from_location} to {to_location}")
+        
+    def comment(self, comment):
+        time = datetime.now().replace(second=0, microsecond=0).strftime("%Y-%m-%d %H:%M")
+        self.log(f"{time}  {self.user} comment: {comment}")

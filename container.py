@@ -1,3 +1,6 @@
+import multiprocessing
+import time
+
 class container:
     def __init__(self, name: str, mass: int, row : int = -1, col : int = -1) -> None:
         self.name = name
@@ -56,8 +59,31 @@ class ship():
         self.right_set = self.get_right_set()
         self.moves = moves
 
-    def get_worst_case_balance():
-        return 999
+    def get_worst_case_balance(self):
+        sum = 0
+        dim = len(self.containers)
+        dim2 = len(self.containers[0])
+        for i in range(dim):
+            for j in range(dim2):
+                if (self.is_container(self.containers[i][j])):
+                    if (j < dim2/2):
+                        sum += abs(j - (dim2/2+1))
+                    else:
+                        sum += abs(j - dim2/2)
+        return sum
+    
+    def get_closest_spot(self):
+        #returns x,y of closest open spot using manhattan distance
+        x = 0
+        y = 0
+        min = len(self.containers) + len(self.containers[0])
+        for i in range(len(self.containers[0])):
+            dist = self.get_top_free_space(i)
+            if dist + i < min:
+                x = dist
+                y = i
+                min = dist+i
+        return(x,y)
 
     def append_moves(self,x1,y1,x2,y2):
         self.moves.append(Move(x1,y1,x2,y2))
@@ -89,17 +115,28 @@ class ship():
                     self.containers[i][j].set_cords(i,j)
                     right.add(self.containers[i][j])
         return right
+    
+    def can_be_balanced(self) -> bool:
+        set_both = self.get_left_set()
+        set_both.union(self.get_right_set())
+        containers = list(set_both)
+        return self._can(containers,0,0,0)
+        
+    def _can(self,containers,lsum,rsum,i) -> bool:
+        if (i == len(containers)-1):
+            return (max(lsum,rsum) <= 1.1*min(lsum,rsum))
+        for j in range(i,len(containers)):
+            return self._can(containers,lsum+containers[j].mass,rsum,i+1) or self._can(containers,lsum,rsum+containers[j].mass,i+1)
+
 
     def balance(self,search,problem):
         try:
             node,i,j = search(problem,trace = True)
         except:
-            return []
+            return None
         return node.state
 
     def transfer_list_off(self,list):
-        #[+]--
-        print("DEBUG: -->transfer_list_off()")
         moves = []
         j = 0
         while(len(list) != 0):
@@ -117,8 +154,6 @@ class ship():
         return moves
 
     def move_off(self,x,y,moves):
-        #[+]--
-        print("DEBUG: -->move_off()")
         while self.get_top_container(y) != x:
             self.move_nearest(self.get_top_container(y),y,moves)
         moves.append(Move(x,y,-2,-2))
@@ -136,10 +171,11 @@ class ship():
                 return
         moves.append(Move(x,y,-3,-3))
 
-    def transfer_list_on(num: int):
-        #implement
-        while (num > 0):
-            pass
+    def transfer_list_on(self,cont: container):
+        (x,y) = self.get_closest_spot()
+        move = Move(0,0,x,y)
+        self.containers[x][y] = cont
+        return self.shortest_path(move)
 
     def get_container(self,x,y):
         return self.containers[x][y]
@@ -165,8 +201,6 @@ class ship():
             return -1
     
     def get_top_container(self,x):
-        #[+]--
-        # print("DEBUG: -->get_top_container()")
         for i in range(len(self.containers)):
             if (self.containers[i][x] != 0 and self.containers[i][x] != -1):
                 return i
