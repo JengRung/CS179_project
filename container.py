@@ -111,6 +111,8 @@ class ship():
         return node.state
 
     def transfer_list_off(self,list):
+        #[+]--
+        print("DEBUG: -->transfer_list_off()")
         moves = []
         j = 0
         while(len(list) != 0):
@@ -128,6 +130,8 @@ class ship():
         return moves
 
     def move_off(self,x,y,moves):
+        #[+]--
+        print("DEBUG: -->move_off()")
         while self.get_top_container(y) != x:
             self.move_nearest(self.get_top_container(y),y,moves)
         moves.append(Move(x,y,-2,-2))
@@ -175,6 +179,8 @@ class ship():
             return -1
     
     def get_top_container(self,x):
+        #[+]--
+        # print("DEBUG: -->get_top_container()")
         for i in range(len(self.containers)):
             if (self.containers[i][x] != 0 and self.containers[i][x] != -1):
                 return i
