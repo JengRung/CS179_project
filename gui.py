@@ -15,7 +15,7 @@ import a_star as ast
 from log import LogDriver
 
 # SIZER= 1.15, 2, 1
-SIZER= 1.15
+SIZER= .45
 fontSIZER= .6
 OUTPUT_LOG_FILE = "output_log.txt"
 LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
@@ -193,6 +193,7 @@ class TransferGrid(QWidget):
 #     - [+] UNload phase
 #     - [+] load phase
 #     - [+] Fix Login -- logdriver
+#     
         
     def __init__(self, canvas, parent=None):
         super().__init__(parent)

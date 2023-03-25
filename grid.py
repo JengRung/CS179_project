@@ -5,7 +5,7 @@ import os
 from buffer import BufferWindow
 import container as cont
 
-SIZER= 1
+SIZER= .45
 fontSIZER= .6
 
 # TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2),(-2,-2)],
@@ -409,9 +409,9 @@ class FinishPage(QWidget):
         output_manifest_name = manifest_name.replace(".txt", "_OUTBOUND.txt")
 
         #[+]--Gener------#[+]--------------------------------------\\
-        # absPath= os.path.realpath(__file__)
-        # thisPath= os.path.dirname(absPath)
-        thisPath= (r"C:\Users\richa\Desktop")
+        absPath= os.path.realpath(__file__)
+        thisPath= os.path.dirname(absPath)
+
         output_manifest_name= os.path.join(thisPath, output_manifest_name)
         
         with open(output_manifest_name, "w") as f:
