@@ -1,6 +1,7 @@
 from PySide2.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 from PySide2.QtCore import QTimer
 from PySide2.QtGui import QFont
+
 from buffer import BufferWindow
 
 # TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2),(-2,-2)],
