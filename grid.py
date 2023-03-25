@@ -338,7 +338,7 @@ class BlockGrid(QWidget):
         self.path_index = 0
         
         if self.finish_path == len(self.path):
-            finish_page = FinishPage(self.parent_canvas, self.logdriver, self.manifest_name)
+            finish_page = FinishPage(self.parent_canvas, self.logdriver, self.manifest_name, self.container_status)
             # Set the finish page as index 5
             self.parent_canvas.insertWidget(5, finish_page)
             self.parent_canvas.setCurrentIndex(5)
@@ -373,10 +373,11 @@ class BlockGrid(QWidget):
         self.logdriver.comment(comment)
 
 class FinishPage(QWidget):
-    def __init__(self, parent_canvas, logdriver, manifest_name, parent=None):
+    def __init__(self, parent_canvas, logdriver, manifest_name, container, parent=None):
         super().__init__(parent)
         
         self.parent_canvas = parent_canvas
+        self.container = container
         
         # Create a QVBoxLayout to hold the finish message and a button to go back
         finish_page_layout = QVBoxLayout()
@@ -393,6 +394,22 @@ class FinishPage(QWidget):
         back_button.setFont(QFont("Arial", 20, QFont.Bold))
         back_button.clicked.connect(self.go_back)
         finish_page_layout.addWidget(back_button)
+        
+        # Generate manifest
+        print("Generating manifest...")
+        print(self.container)
+        output_manifest_name = manifest_name.replace(".txt", "_out.txt")
+        
+        with open(output_manifest_name, "w") as f:
+            for x in range(len(self.container)-1, -1, -1):
+                for y in range(len(self.container[x])):
+                    if type(self.container[x][y]) == cont.container:
+                        print(9-x, y+1, self.container[x][y].name, self.container[x][y].mass)
+                        f.write('[{},{}], {{{:05}}}, {}\n'.format(9-x, y+1, self.container[x][y].mass, self.container[x][y].name))
+                    elif self.container[x][y] == 0:
+                        f.write('[{},{}], {{{:05}}}, {}\n'.format(9-x, y+1, 00000, "UNUSED"))
+                    elif self.container[x][y] == -1:
+                        f.write('[{},{}], {{{:05}}}, {}\n'.format(9-x, y+1, 00000, "NAN"))
         
         # Write to log when finish cycle and generate new manifest
         logdriver.finishCycle(manifest_name)

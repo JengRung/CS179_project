@@ -23,6 +23,7 @@ indexTionary= {
     'login': 1,
     'transfer': 2,
     'logout': 3,
+    'not_balance': 4,
 }
 
 class MainPage(QWidget):
@@ -105,13 +106,20 @@ class MainPage(QWidget):
         ship = cont.ship(self.ship_container)
         new_ship = None
 
-        #Check if balance is possible
-        if (ship.can_be_balanced() == False):
-            print("Can not be balanced")
-            #Add something to skip the rest here
-        else:
-            new_ship = ship.balance(ast.search,ast.balance(ship))
-            #do stuff here
+
+        new_ship = ship.balance(ast.search,ast.balance(ship))
+        # #Check if balance is possible
+        # if (ship.can_be_balanced() == False):
+        #     # Add something to skip the rest here
+        #     print("Can not be balanced")
+        #     self.canvas.setCurrentIndex(4)
+        #     # Clear ship container
+        #     self.ship_container = [[0 for x in range(12)] for y in range(9)]
+        #     return
+            
+        # else:
+        #     new_ship = ship.balance(ast.search,ast.balance(ship))
+        #     #do stuff here
 
         if new_ship == None:
             print("A* Failure, resort to default")
@@ -428,7 +436,27 @@ class LogoutPage(QWidget):
         LOGDRIVER.logout()
         self.canvas.setCurrentIndex(0)
                     
-                    
+class NotBalancePage(QWidget):
+    def __init__(self, canvas, parent=None):
+        super().__init__(parent)
+        self.canvas = canvas
+        layout = QVBoxLayout()
+        message = QLabel('The Manifests is not balanced \nPlease select another manifest')
+        message.setFixedSize(1800, 500)
+        message.setFont(QFont('Arial', 50))
+        
+        home_button = QPushButton('Go back to home')
+        home_button.setFont(QFont('Arial', 20))
+        home_button.clicked.connect(self.backhome)
+        
+        layout.addWidget(message)
+        layout.addWidget(home_button)
+        self.setLayout(layout)
+        
+    def backhome(self):
+        LOGDRIVER.logout()
+        self.canvas.setCurrentIndex(0)
+
 class Canvas(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -447,6 +475,9 @@ class Canvas(QWidget):
         
         logout_page = LogoutPage(self.stacked_widget)
         self.stacked_widget.addWidget(logout_page)
+        
+        not_balanced_page = NotBalancePage(self.stacked_widget)
+        self.stacked_widget.addWidget(not_balanced_page)
 
         layout = QVBoxLayout()
         layout.addWidget(self.stacked_widget)
