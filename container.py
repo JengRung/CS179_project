@@ -56,6 +56,9 @@ class ship():
         self.right_set = self.get_right_set()
         self.moves = moves
 
+    def get_worst_case_balance():
+        return 999
+
     def append_moves(self,x1,y1,x2,y2):
         self.moves.append(Move(x1,y1,x2,y2))
 
@@ -100,6 +103,9 @@ class ship():
         while(len(list) != 0):
             temp = list[-1]
             for i in list:
+                if (not self.is_container(self.containers[i[0]][i[1]])):
+                    print("Error: Trying to transfer a container that doesn't exist")
+                    return []
                 if i[0] == self.get_top_container(i[1]) + j:
                     self.move_off(i[0],i[1],moves)
                     list.remove(i)
@@ -127,6 +133,7 @@ class ship():
         moves.append(Move(x,y,-3,-3))
 
     def transfer_list_on(num: int):
+        #implement
         while (num > 0):
             pass
 
