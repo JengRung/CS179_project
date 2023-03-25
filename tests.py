@@ -68,11 +68,11 @@ if new_ship == []:
 else:
     print(new_ship.moves)
 #print(ship.shortest_path(new_ship.moves[0]),'\n')
-m = cont.Move(4,4,-2,-2)
+m = cont.Move(0,0,-2,-2)
 print(new_ship.shortest_path(m))
 
 print("-----Moving------")
-moves_new = new_ship.transfer_list_off([[6,6]])
+moves_new = new_ship.transfer_list_off([[0,0]])
 print(moves_new[0])
 print(ship.shortest_path(moves_new[0]))
 print(ship.shortest_path(moves_new[1]))
