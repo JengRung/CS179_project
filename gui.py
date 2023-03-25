@@ -344,9 +344,10 @@ class TransferGrid(QWidget):
             
     def loadPhase(self):
         self.ship_container= np.zeros((9,12))
+        pass
 
-        for item in self.newItems:
-            print(item)
+        # for item in self.newItems:
+        #     print(item)
 
     def go_back(self):
         self.canvas.setCurrentIndex(indexTionary['home'])
