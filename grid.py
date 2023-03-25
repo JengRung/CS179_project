@@ -329,7 +329,8 @@ class BlockGrid(QWidget):
             start_coord = container_coord.copy()
             end_coord = self.path[self.finish_path][-1].copy()
             reverse_coord(container_coord)
-            self.logdriver.moveInsideShip(self.container_status[container_coord[0]][container_coord[1]].name, start_coord, end_coord)
+            # self.logdriver.moveInsideShip(self.container_status[container_coord[0]][container_coord[1]].name, start_coord, end_coord)
+            self.logdriver.moveInsideShip(self.container_status[container_coord[0]][container_coord[1]], start_coord, end_coord)
         
         # Coordinate for update container status
         old_coord = self.path[self.finish_path][0]
