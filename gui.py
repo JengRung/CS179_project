@@ -125,7 +125,7 @@ class MainPage(QWidget):
         self.canvas.setCurrentIndex(1) 
 
 
-#-[:+:]===============================Transfer CheckList =====================================================================\\
+#-[:+:]===============================Transfer CheckList ==========================================================================================\\
 class TransferGrid(QWidget):
     #---TOdo--:
         #- [+] Process input into numbers for output into A* algo
@@ -133,7 +133,7 @@ class TransferGrid(QWidget):
             # - [+] unload output: ( x, y, weight )
         #- [ ] refactor for better readabilty
         #- [+] Parse manifest weiight and coordinates
-        #- [ ] Parse panifest item names
+        #- [+] Parse panifest item names
         #- [+] Replace manifest list with Multi-select
 #     - [+] Add page for the transfer task
 #     - [ ] User log comments
@@ -141,13 +141,15 @@ class TransferGrid(QWidget):
 #     - [+] manifest checkist for transfer task
 #     - [ ] display instructions for moving containers
 #     - [ ] reminder prompt
-#     - [ ] Generat new Manifest
+#     - [+] Generat new Manifest
+#     - [+] UNload phase
+#     - [ ] load phase
         
     def __init__(self, canvas, parent=None):
         super().__init__(parent)
         self.canvas= canvas
 
-        self.loadout= np.empty((0,2))
+        self.newItems= np.empty((0,2))
         self.unloadItems= np.empty((0,3))
         
         self.ship_container = [[0 for x in range(12)] for y in range(9)]
@@ -175,6 +177,7 @@ class TransferGrid(QWidget):
         loadBtn = QtWidgets.QPushButton("Load Item", self)
         self.loadList= QtWidgets.QListWidget(self)
         loadCol.addWidget(QLabel("Enter Name and Weight of items to be Loaded: "))
+        self.loadPhaseBtn = QtWidgets.QPushButton("Generate Instructions for loading", self)
         loadBtn.clicked.connect(self.loadItem)
         inputSect_L.addWidget(itemLabel)
         inputSect_L.addWidget(self.inputName)
@@ -183,27 +186,26 @@ class TransferGrid(QWidget):
         inputSect_L.addWidget(loadBtn)
         loadCol.addLayout(inputSect_L)
         loadCol.addWidget(self.loadList)
+        self.loadPhaseBtn.clicked.connect(self.unloadPhase)
+        loadCol.addWidget(self.loadPhaseBtn)
 
 
         #[+]:-- unload column reads from the manifest and makes list-----------\\
         self.maniBtn = QtWidgets.QPushButton("Select Items From Manifest", self)
         self.manifestList= QtWidgets.QListWidget(self)
         self.manifestList.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
+        self.unloadBtn = QtWidgets.QPushButton("Generate Instructions for Unloading", self)
         self.unloadCol_R.addWidget(QLabel("Select all items to unload: "))
         self.maniBtn.clicked.connect(self.manifest)
         self.unloadCol_R.addWidget(self.maniBtn)
         self.unloadCol_R.addWidget(self.manifestList)
+        self.unloadBtn.clicked.connect(self.unloadPhase)
+        self.unloadCol_R.addWidget(self.unloadBtn)
+
         self.qBtnGroup= QtWidgets.QButtonGroup()
         # self.unloadCol_R.addWidget(self.qBtnGroup)
         # self.scrollBox = QtWidgets.QScrollArea(self)
 
-
-
-
-        #[+]:-- third colum just for submit button------------------------------\\
-        self.subBtn = QtWidgets.QPushButton("Generate Instructions", self)
-        self.subBtn.clicked.connect(self.getLoadout)
-        subCol_R.addWidget(self.subBtn)
         
     
     def manifest(self):
@@ -264,16 +266,6 @@ class TransferGrid(QWidget):
             #     self.ship_container.reverse()
             #     for row in self.ship_container:
             #         print(row)
-
-
-
-
-
-            
-
-
-
-
                     
     def loadItem(self):
         print("list accessed")
@@ -287,18 +279,18 @@ class TransferGrid(QWidget):
                 if (int(itemWeight)>=0): 
                     self.loadList.addItem(listInput)
                     newItem= np.reshape((itemName, itemWeight), (1,2))
-                    self.loadout= np.append(self.loadout, newItem, axis=0)
-                    # print(str(newItem)+ " --> " + str(self.loadout))
-                    # print(str(self.loadout.shape)+ "\n")
+                    self.newItems= np.append(self.newItems, newItem, axis=0)
+                    # print(str(newItem)+ " --> " + str(self.newItems))
+                    # print(str(self.newItems.shape)+ "\n")
                 else: print('Invalid Weight entry')
             else: print("Invalid Name")
         else: print("Missing Required Field")
 
     # This fx should maybe modified to use the A* algo to create the instructions
-    def getLoadout(self):
-        if len(self.loadout)+len(self.manifestList.selectedItems())>0:
+    def unloadPhase(self):
+        if len(self.newItems)+len(self.manifestList.selectedItems())>0:
             # transfer_list = []
-            # for item in self.loadout:
+            # for item in self.newItems:
             #     for x in range(len(self.ship_container)-1):
             #         for y in range(len(self.ship_container[x])-1):
             #             if self.ship_container[x][y] != -1 and self.ship_container[x][y] != 0:
@@ -317,7 +309,7 @@ class TransferGrid(QWidget):
                 # transfer_list.append((x,y))
                 transfer_list.append([9-x,y-1])
                 # transfer_list= [[7,0],[7,1]]
-            print("        [OUTGOING]:=======> "+ str(transfer_list))
+            print("        [OUTGOING]:======> "+ str(transfer_list))
             #-----------------------------------------------------------------------------------------------/
 
             
@@ -340,7 +332,7 @@ class TransferGrid(QWidget):
             self.canvas.addWidget(grid)
             self.canvas.setCurrentWidget(grid)
             
-            return self.loadout
+            return self.newItems
         else:
             print("Fields are empty!")
             
@@ -348,6 +340,7 @@ class TransferGrid(QWidget):
             # transfer_list = [[0, 3], [0, 7]]
             # moves = ship.transfer_list_off(transfer_list)
             # print(moves)
+#-[:+:]===============================Transfer CheckList ==========================================================================================//
 
 
 class LoginPage(QWidget):
