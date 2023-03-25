@@ -13,8 +13,7 @@ import container as cont
 import a_star as ast
 from log import LogDriver
 
-# SIZER= 1.15, 2, 1
-SIZER= 0.7
+
 OUTPUT_LOG_FILE = "output_log.txt"
 LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
 
@@ -395,9 +394,7 @@ class Canvas(QWidget):
         self.setLayout(layout)
 
 
-        rez= app.primaryScreen().size()
-        # window_size = (16 * 96*SIZER*1.1, 9 * 96*SIZER + 50)
-        window_size = (rez.width()*SIZER, rez.height()*SIZER)
+        window_size = (2000, 1000)
         self.setFixedSize(*window_size)
 
 if __name__ == '__main__':
