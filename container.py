@@ -60,7 +60,7 @@ class ship():
         self.moves.append(Move(x1,y1,x2,y2))
 
     def set_cost(self,cost):
-        self.last_cost = cost
+        self.last_cost += cost
 
     def is_container(self,cont: container) -> bool:
         return (type(cont) == container)
@@ -89,10 +89,10 @@ class ship():
 
     def balance(self,search,problem):
         try:
-            node,i,j = search(problem)
+            node,i,j = search(problem,trace = True)
         except:
             return []
-        return node.state.moves
+        return node.state
 
     def transfer_list_off(self,list):
         moves = []
@@ -218,36 +218,32 @@ class ship():
     
     def shortest_path(self, move: Move)->list:
         if move.x2 == -2:
-            pass
+            move_new = Move(move.x1,move.y1,0,0)
+            move_temp = self.shortest_path(move_new)
+            move_temp.append([-1,0])
+            move_temp.append([-2,-2])
         elif move.x2 == -3:
-            pass
+            move_new = Move(move.x1,move.y1,0,0)
+            move_temp = self.shortest_path(move_new)
+            move_temp.append([-1,0])
+            move_temp.append([-3,-3])
         else:
-            pass
-        move_temp = []
-        height_max = move.x1
-        temp = 0
-        temp1 = 0
-        for i in range(min(move.y1,move.y2),max(move.y1,move.y2)+1):
-            height_max = min(height_max,self.get_top_free_space(i))
-        for i in range(move.x1,height_max,-1):
-            move_temp.append([i,move.y1])
-        temp = height_max
-        if (move.y1 < move.y2):
-            for i in range(move.y1,move.y2):
-                move_temp.append([temp,i])
-        else:
-            for i in range(move.y1,move.y2,-1):
-                move_temp.append([temp,i])
-        for i in range(temp,move.x2):
-            move_temp.append([i,move.y2])
-        move_temp.append([move.x2,move.y2])
+            move_temp = []
+            height_max = min(move.x1,move.x2)
+            temp = 0
+            for i in range(min(move.y1,move.y2),max(move.y1,move.y2)+1):
+                height_max = min(height_max,self.get_top_free_space(i))
+            print("MAX:",height_max)
+            for i in range(move.x1,height_max,-1):
+                move_temp.append([i,move.y1])
+            temp = height_max
+            if (move.y1 < move.y2):
+                for i in range(move.y1,move.y2):
+                    move_temp.append([temp,i])
+            else:
+                for i in range(move.y1,move.y2,-1):
+                    move_temp.append([temp,i])
+            for i in range(temp,move.x2):
+                move_temp.append([i,move.y2])
+            move_temp.append([move.x2,move.y2])
         return move_temp
-
-        
-
-
-
-
-  
-
-

@@ -22,7 +22,7 @@ class node:
 
     def __lt__(self, other):
         if (self.distance + self.depth == other.distance + other.depth):
-            return self.distance < other.distance
+            return self.depth < other.depth
         else:
             return (self.distance + self.depth) < (other.distance + other.depth)
 
@@ -62,7 +62,7 @@ def queing_function(nodes: queue.PriorityQueue, children: list[cont.ship], depth
     for child in children:
         tuple_state = str(child.containers)
         if not visited_nodes.__contains__(tuple_state):
-            new_node = node(child,depth+1,child.heuristic())
+            new_node = node(child,depth+1,child.heuristic() + child.last_cost)
             nodes.put(new_node)
             visited_nodes.add(tuple_state)
     if trace:
