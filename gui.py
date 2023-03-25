@@ -16,7 +16,7 @@ from log import LogDriver
 
 # SIZER= 1.15, 2, 1
 SIZER= 1
-fontSIZER= .7
+fontSIZER= .6
 OUTPUT_LOG_FILE = "output_log.txt"
 LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
 
@@ -176,20 +176,23 @@ class TransferGrid(QWidget):
         #- [+] Process input into numbers for output into A* algo
             # - [+] Load Output: (name, weight)
             # - [+] unload output: ( x, y, weight )
-        #- [ ] refactor for better readabilty
+        #- [+] refactor for better readabilty
         #- [+] Parse manifest weiight and coordinates
         #- [+] Parse panifest item names
         #- [+] Replace manifest list with Multi-select
 #     - [+] Add page for the transfer task
-#     - [ ] User log comments
-#     - [ ] log file
+#     - [+] User log comments
+#     - [+] outbound manifest --> Desktop
+#     - [+] log msg: outbound manifest --> Desktop (logdriver.finishCycle)
+#     - [ ] log errors
+#     - [+] new Manifest
 #     - [+] manifest checkist for transfer task
-#     - [ ] display instructions for moving containers
-#     - [ ] reminder prompt
+#     - [+] display instructions for moving containers
+#     - [+] reminder prompt
 #     - [+] Generat new Manifest
 #     - [+] UNload phase
-#     - [ ] load phase
-#     - [ ] Fix Login
+#     - [+] load phase
+#     - [+] Fix Login -- logdriver
         
     def __init__(self, canvas, parent=None):
         super().__init__(parent)
@@ -400,7 +403,7 @@ class TransferGrid(QWidget):
         else:
             msg= ("Warning: No Items Selected! Load the manifest, and Click on all the Items you want to load")
             self.popupPrompt(msg)
-            
+           
 
             
     def loadPhase(self):
@@ -425,7 +428,7 @@ class TransferGrid(QWidget):
                     move[1] = 9 - move[1] 
                 print("load_PATH: "+ str(path))
         else:
-            msg= ("Warning: You have no items to load")
+            msg= ("Warning: You have no items to load.\n Please Enter Some Items")
             self.popupPrompt(msg)
         
         grid = BlockGrid(parent_canvas = self.canvas, 
@@ -451,7 +454,12 @@ class TransferGrid(QWidget):
     def popupPrompt(self, msg):
         popupWindow = QtWidgets.QDialog()
         popupWindow.setWindowTitle("!NOTICE")
+        rez= app.primaryScreen().size()
+        msgLabel = QLabel(msg)
+        msgLabel.setFont(QFont('Consolas', 20*fontSIZER))
+        popupWindow.resize(rez.width()*0.25, rez.height()*0.25)
         window = QHBoxLayout()
+        window.addWidget(msgLabel)
         popupWindow.setLayout(window)
         popupWindow.exec_()
 #-[:+:]===============================Transfer CheckList ==========================================================================================//
