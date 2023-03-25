@@ -193,7 +193,7 @@ class TransferGrid(QWidget):
 #     - [+] UNload phase
 #     - [+] load phase
 #     - [+] Fix Login -- logdriver
-#     
+#     - [ ] Multiphase Transfer
         
     def __init__(self, canvas, parent=None):
         super().__init__(parent)
@@ -229,7 +229,7 @@ class TransferGrid(QWidget):
         loadBtn = QtWidgets.QPushButton("Load Item", self)
         self.loadList= QtWidgets.QListWidget(self)
         loadCol.addWidget(QLabel("Enter Name and Weight of items to be Loaded: "))
-        self.loadPhaseBtn = QtWidgets.QPushButton("Generate Instructions For Loading", self)
+        self.loadPhaseBtn = QtWidgets.QPushButton("Generate Instructions For Loading + Unloading", self)
         self.clrBtn = QtWidgets.QPushButton("Clear", self)
         self.rmBtn = QtWidgets.QPushButton("Remove Item", self)
         loadBtn.clicked.connect(self.loadItem)
@@ -245,7 +245,7 @@ class TransferGrid(QWidget):
         self.rmBtn.clicked.connect(self.removeRow)
         inputSect_L.addWidget(self.rmBtn)
         loadCol.addWidget(self.loadList)
-        self.loadPhaseBtn.clicked.connect(self.loadPhase)
+        self.loadPhaseBtn.clicked.connect(self.multiPhaseTransfer)
         loadCol.addWidget(self.loadPhaseBtn)
 
 
@@ -254,14 +254,14 @@ class TransferGrid(QWidget):
         self.maniBtn = QtWidgets.QPushButton("Select Items From Manifest", self)
         self.manifestList= QtWidgets.QListWidget(self)
         self.manifestList.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
-        self.unloadBtn = QtWidgets.QPushButton("Generate Instructions for Unloading", self)
+        # self.unloadBtn = QtWidgets.QPushButton("Generate Instructions for Unloading", self)
         # self.unloadBtn.setFont(QFont('Consolas', 12))
         self.unloadCol_R.addWidget(QLabel("Select all items to unload: "))
         self.maniBtn.clicked.connect(self.manifest)
         self.unloadCol_R.addWidget(self.maniBtn)
         self.unloadCol_R.addWidget(self.manifestList)
-        self.unloadBtn.clicked.connect(self.unloadPhase)
-        self.unloadCol_R.addWidget(self.unloadBtn)
+        # self.unloadBtn.clicked.connect(self.unloadPhase)
+        # self.unloadCol_R.addWidget(self.unloadBtn)
 
         self.qBtnGroup= QtWidgets.QButtonGroup()
         # self.unloadCol_R.addWidget(self.qBtnGroup)
@@ -307,6 +307,7 @@ class TransferGrid(QWidget):
                         #[+]-- Create Ship State based on manifest: 
                         self.ship_container[int(itemXYW[0]) - 1][int(itemXYW[1]) - 1] = cont.container(tmp_Name, itemXYW[2])
                 self.ship_container.reverse()
+                print("\n\n[::] ======= [:START:] ======= [::]")
                 for row in self.ship_container:
                     print(row)
                 self.manifestList.setFont(QFont('Consolas', 11))
@@ -357,6 +358,8 @@ class TransferGrid(QWidget):
 
     # This fx should maybe modified to use the A* algo to create the instructions
     def unloadPhase(self):
+        print("\n--->UNloadPhase()::")
+        paths = []
         if len(self.manifestList.selectedItems())>0:
             # transfer_list = []
             # for item in self.newItems:
@@ -379,9 +382,11 @@ class TransferGrid(QWidget):
             print("        [OUTGOING]:======> "+ str(transfer_list))
             #-----------------------------------------------------------------------------------------------/
             
+            # create a ship from a matrix of containers
             ship = cont.ship(self.ship_container)
+
             balance_moves = ship.transfer_list_off(transfer_list)
-            paths = []
+            # paths = []
             print("Unload Moves: "+ str(balance_moves))
             for move in balance_moves:
                 paths.append(ship.shortest_path(move))
@@ -400,7 +405,14 @@ class TransferGrid(QWidget):
                          manifest_name = self.manifest_name)
             self.canvas.addWidget(grid)
             self.canvas.setCurrentWidget(grid)
-            return self.newItems
+            # return self.newItems
+
+            print("\n\n[::] ======= [:UNLOADED:] ======= [::]")
+            for row in ship.containers:
+                print(row)
+            print('\n')
+
+            return ship
         else:
             msg= ("Warning: No Items Selected! Load the manifest, and Click on all the Items you want to load")
             self.popupPrompt(msg)
@@ -409,11 +421,14 @@ class TransferGrid(QWidget):
 
             
     def loadPhase(self):
-        # def __init__(self, name: str, mass: int, row : int = -1, col : int = -1) -> None:
         # cont.container(container_name, container_weight)
+        ship= self.unloadPhase()
+        print("\n--->loadPhase()::")
+        # for row in ship.containers:
+        #     print(row)
+        paths= []
         if len(self.newItems)>0:
-            ship = cont.ship(self.ship_container)
-            paths= []
+            # ship = cont.ship(self.ship_container)
             for item in self.newItems:
                 # print(item)
                 # print(type(item[1]))
@@ -433,7 +448,7 @@ class TransferGrid(QWidget):
             msg= ("Warning: You have no items to load.\n Please Enter Some Items")
             self.popupPrompt(msg)
             LOGDRIVER.error(msg)
-        
+        print("    ===>Grid::")
         grid = BlockGrid(parent_canvas = self.canvas, 
             logdriver = LOGDRIVER, 
             input_path = paths, 
@@ -441,8 +456,19 @@ class TransferGrid(QWidget):
             manifest_name = self.manifest_name)
         self.canvas.addWidget(grid)
         self.canvas.setCurrentWidget(grid)
-            
+
+        print("\n[[:+:] ======= [:Transfer / Load Complete:] ======= [:+:]")
+        # for row in ship.containers:
+        #     print(row)
+        # print("\n")
+        return ship
+
+    def multiPhaseTransfer(self):
+        ship= self.loadPhase()
+        for row in ship.containers:
+            print(row)
         
+    
 
     def go_back(self):
         self.canvas.setCurrentIndex(indexTionary['home'])

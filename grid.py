@@ -400,18 +400,16 @@ class FinishPage(QWidget):
         back_button.clicked.connect(self.go_back)
         finish_page_layout.addWidget(back_button)
 
-
-
         
         # Generate manifest
-        print("Generating manifest--> "+ str(manifest_name))
-        print(self.container)
+        print("\nGenerating manifest--> "+ str(manifest_name))
         output_manifest_name = manifest_name.replace(".txt", "_OUTBOUND.txt")
+        # for i in self.container:
+        #     print(i)
 
         #[+]--Gener------#[+]--------------------------------------\\
         absPath= os.path.realpath(__file__)
         thisPath= os.path.dirname(absPath)
-
         output_manifest_name= os.path.join(thisPath, output_manifest_name)
         
         with open(output_manifest_name, "w") as f:
@@ -459,7 +457,6 @@ def cost_calculator(paths):
         elif blocks["buffer"] > 0:
             total_cost += blocks["buffer"] - 1
             total_cost += 4
-        
+    
         arr_costs.append(total_cost)
-
     return arr_costs
