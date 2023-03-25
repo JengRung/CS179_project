@@ -89,10 +89,25 @@ class MainPage(QWidget):
             print(row)
         
         ship = cont.ship(self.ship_container)
-        new_ship = ship.balance(ast.search,ast.balance(ship))
-        balance_moves = new_ship.moves
+        new_ship = None
+
+        #Check if balance is possible
+        if (ship.can_be_balanced() == False):
+            print("Can not be balanced")
+            #Add something to skip the rest here
+        else:
+            new_ship = ship.balance(ast.search,ast.balance(ship))
+            #do stuff here
+
+        if new_ship == None:
+            print("A* Failure, resort to default")
+            #A* Failed for some reason, do the default maritime law algo
+        else:
+            pass
+            #do the balancing GUI stuff here
 
         #-------- correct order ---------------------
+        balance_moves = new_ship.moves
         paths = []
         ship_temp = copy.deepcopy(ship)
         for moves in balance_moves:

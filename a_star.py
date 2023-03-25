@@ -73,7 +73,6 @@ def queing_function(nodes: queue.PriorityQueue, children: list[cont.ship], depth
 #Our main search; que's based on the passed in queing function
 def search(problem: balance,queing_function = queing_function,trace = False):
     nodes = make_que(make_node(problem.init_state,0,problem.init_state.heuristic()))
-    #worst_case = (int)(problem.init_state.get_worst_case_balance()*1.5)
     i = 0
     visited_nodes = {str(problem.init_state.containers)}
     while not nodes.empty():
@@ -81,7 +80,5 @@ def search(problem: balance,queing_function = queing_function,trace = False):
         node = nodes.get()
         if problem.goal_test(node.state):
             return (node,node.depth,i)
-        #elif node.distance > worst_case:
-            #raise Exception("Search terminated in failure")
         nodes = queing_function(nodes,expand(node),node.depth,visited_nodes,trace)
     raise Exception("Search terminated in failure")

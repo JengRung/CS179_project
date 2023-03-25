@@ -1,3 +1,6 @@
+import multiprocessing
+import time
+
 class container:
     def __init__(self, name: str, mass: int, row : int = -1, col : int = -1) -> None:
         self.name = name
@@ -112,12 +115,25 @@ class ship():
                     self.containers[i][j].set_cords(i,j)
                     right.add(self.containers[i][j])
         return right
+    
+    def can_be_balanced(self) -> bool:
+        set_both = self.get_left_set()
+        set_both.union(self.get_right_set())
+        containers = list(set_both)
+        return self._can(containers,0,0,0)
+        
+    def _can(self,containers,lsum,rsum,i) -> bool:
+        if (i == len(containers)-1):
+            return (max(lsum,rsum) <= 1.1*min(lsum,rsum))
+        for j in range(i,len(containers)):
+            return self._can(containers,lsum+containers[j].mass,rsum,i+1) or self._can(containers,lsum,rsum+containers[j].mass,i+1)
+
 
     def balance(self,search,problem):
         try:
-            node,i,j = search(problem,trace = False)
+            node,i,j = search(problem,trace = True)
         except:
-            return self
+            return None
         return node.state
 
     def transfer_list_off(self,list):
