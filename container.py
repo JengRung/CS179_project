@@ -56,6 +56,22 @@ class ship():
         self.right_set = self.get_right_set()
         self.moves = moves
 
+    def get_worst_case_balance():
+        return 999
+    
+    def get_closest_spot(self):
+        #returns x,y of closest open spot using manhattan distance
+        x = 0
+        y = 0
+        min = len(self.containers) + len(self.containers[0])
+        for i in range(len(self.containers[0])):
+            dist = self.get_top_free_space(i)
+            if dist + i < min:
+                x = dist
+                y = i
+                min = dist+i
+        return(x,y)
+
     def append_moves(self,x1,y1,x2,y2):
         self.moves.append(Move(x1,y1,x2,y2))
 
@@ -91,15 +107,20 @@ class ship():
         try:
             node,i,j = search(problem,trace = True)
         except:
-            return []
+            return self
         return node.state
 
     def transfer_list_off(self,list):
+        #[+]--
+        print("DEBUG: -->transfer_list_off()")
         moves = []
         j = 0
         while(len(list) != 0):
             temp = list[-1]
             for i in list:
+                if (not self.is_container(self.containers[i[0]][i[1]])):
+                    print("Error: Trying to transfer a container that doesn't exist")
+                    return []
                 if i[0] == self.get_top_container(i[1]) + j:
                     self.move_off(i[0],i[1],moves)
                     list.remove(i)
@@ -109,6 +130,8 @@ class ship():
         return moves
 
     def move_off(self,x,y,moves):
+        #[+]--
+        print("DEBUG: -->move_off()")
         while self.get_top_container(y) != x:
             self.move_nearest(self.get_top_container(y),y,moves)
         moves.append(Move(x,y,-2,-2))
@@ -126,9 +149,11 @@ class ship():
                 return
         moves.append(Move(x,y,-3,-3))
 
-    def transfer_list_on(num: int):
-        while (num > 0):
-            pass
+    def transfer_list_on(self,cont: container):
+        (x,y) = self.get_closest_spot()
+        move = Move(0,0,x,y)
+        self.containers[x][y] = cont
+        return self.shortest_path(move)
 
     def get_container(self,x,y):
         return self.containers[x][y]
@@ -154,6 +179,8 @@ class ship():
             return -1
     
     def get_top_container(self,x):
+        #[+]--
+        # print("DEBUG: -->get_top_container()")
         for i in range(len(self.containers)):
             if (self.containers[i][x] != 0 and self.containers[i][x] != -1):
                 return i
