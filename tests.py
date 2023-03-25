@@ -63,7 +63,13 @@ ship = cont.ship(containers)
 new_ship = ship.balance(ast.search,ast.balance(ship))
 print(ship)
 print(new_ship)
-print(ship.shortest_path(new_ship.moves[0]),'\n')
+if new_ship == []:
+    print("Ship can not be balanced")
+else:
+    print(new_ship.moves)
+#print(ship.shortest_path(new_ship.moves[0]),'\n')
+m = cont.Move(4,4,-2,-2)
+print(new_ship.shortest_path(m))
 
 print("-----Moving------")
 moves_new = new_ship.transfer_list_off([[6,6]])
