@@ -14,7 +14,7 @@ import a_star as ast
 from log import LogDriver
 
 # SIZER= 1.15, 2, 1
-SIZER= 0.7
+SIZER= 1
 OUTPUT_LOG_FILE = "output_log.txt"
 LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
 
@@ -159,6 +159,9 @@ class TransferGrid(QWidget):
         #[::]-- Holds the two columns in a single box:---\\
         #--[[load][unload]]--------------------------\\
         colContainer = QtWidgets.QHBoxLayout(self)
+
+        backCol_L= QVBoxLayout()
+        colContainer.addLayout(backCol_L)
         
         loadCol= QVBoxLayout()
         colContainer.addLayout(loadCol)
@@ -166,8 +169,6 @@ class TransferGrid(QWidget):
         self.unloadCol_R= QVBoxLayout()
         colContainer.addLayout(self.unloadCol_R)
 
-        backCol_L= QVBoxLayout()
-        colContainer.addLayout(backCol_L)
 
         #[+]:-- load column is for data entry--------------------------\\
         #-----------------------------------\\
@@ -185,10 +186,11 @@ class TransferGrid(QWidget):
         inputSect_L.addWidget(self.inputName)
         inputSect_L.addWidget(self.weightLabel)
         inputSect_L.addWidget(self.inputWeight)
+        self.inputWeight.returnPressed.connect(self.loadItem)
         inputSect_L.addWidget(loadBtn)
         loadCol.addLayout(inputSect_L)
         loadCol.addWidget(self.loadList)
-        self.loadPhaseBtn.clicked.connect(self.unloadPhase)
+        self.loadPhaseBtn.clicked.connect(self.loadPhase)
         loadCol.addWidget(self.loadPhaseBtn)
 
 
@@ -210,9 +212,9 @@ class TransferGrid(QWidget):
 
 
         #[+]:-- third colum just for back button------------------------------\\
-        self.subBtn = QtWidgets.QPushButton("< Home", self)
-        self.subBtn.clicked.connect(self.go_back)
-        backCol_L.addWidget(self.subBtn)
+        self.backBtn = QtWidgets.QPushButton("< Home", self)
+        self.backBtn.clicked.connect(self.go_back)
+        backCol_L.addWidget(self.backBtn)
         
     
     def manifest(self):
@@ -224,7 +226,6 @@ class TransferGrid(QWidget):
             wRegex = r'\{(-?\d+(?:\.\d+)?)\}'
             xRegex = r'\[(-?\d+(?:\,\d+)?)\,'
             yRegex = r'\,(-?\d+(?:\,\d+)?)\]'
-            
             # For reading the manifest file for transfer list ui (Done by Richard)
             #[+]-- ---------------------------------------------------------------------------------------------------------------------------\\
             with open(manifest_Path, "r") as file:
@@ -251,23 +252,18 @@ class TransferGrid(QWidget):
                 for row in self.ship_container:
                     print(row)
             #[+]-- ---------------------------------------------------------------------------------------------------------------------------//
-
             # Loading the manifest to self.ship_container (Done by Justin)
             # with open(manifest_Path, "r") as file:
             #     container_pattern = r'(\[.*?\]),\s({.*?}),\s(.*)'
             #     for row in file:
             #         items = re.match(container_pattern, row)
-
             #         container_index, container_weight, container_name= items.groups()
             #         container_indexs = container_index.strip('[]').split(',')
             #         container_weight = int(container_weight.strip('{}'))
-                
             #         if container_name.upper() == "NAN":
             #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = -1
-                    
             #         elif container_name.upper() == "UNUSED":
             #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = 0
-            
             #         else:
             #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = cont.container(container_name, container_weight)
             #     self.ship_container.reverse()
@@ -275,10 +271,10 @@ class TransferGrid(QWidget):
             #         print(row)
                     
     def loadItem(self):
-        print("list accessed")
+        # print("list accessed")
         itemName = self.inputName.text()
         itemWeight= self.inputWeight.text()
-        listInput = "+ ["+itemName+"     :     "+ itemWeight+ "] ==>[SHIP]"
+        listInput = "+ [ "+itemName+"     :     "+ itemWeight+ " ] ==>[SHIP]"
         if len(listInput)+len(itemWeight)>=2:
             self.inputName.clear()
             self.inputWeight.clear()
@@ -287,7 +283,7 @@ class TransferGrid(QWidget):
                     self.loadList.addItem(listInput)
                     newItem= np.reshape((itemName, itemWeight), (1,2))
                     self.newItems= np.append(self.newItems, newItem, axis=0)
-                    # print(str(newItem)+ " --> " + str(self.newItems))
+                    # print(str(itemName)+ " --> " + str(self.newItems))
                     # print(str(self.newItems.shape)+ "\n")
                 else: print('Invalid Weight entry')
             else: print("Invalid Name")
@@ -304,8 +300,6 @@ class TransferGrid(QWidget):
             #                 if item[0] == self.ship_container[x][y].name:
             #                     print(self.ship_container[x][y].name, (x, y))                
             #                     transfer_list.append([x, y])
-
-
             #[+]-- Populate transfer_list with items that the user has selected to UNload fro the ship------\
             transfer_list= []
             print('\nSelected For Unloading: ')
@@ -347,8 +341,15 @@ class TransferGrid(QWidget):
             # transfer_list = [[0, 3], [0, 7]]
             # moves = ship.transfer_list_off(transfer_list)
             # print(moves)
+            
+    def loadPhase(self):
+        self.ship_container= np.zeros((9,12))
+
+        for item in self.newItems:
+            print(item)
+
     def go_back(self):
-        self.parent_canvas.setCurrentIndex('home')
+        self.canvas.setCurrentIndex(indexTionary['home'])
 #-[:+:]===============================Transfer CheckList ==========================================================================================//
 
 
@@ -391,9 +392,11 @@ class Canvas(QWidget):
         self.setLayout(layout)
 
 
-        rez= app.primaryScreen().size()
-        # window_size = (16 * 96*SIZER*1.1, 9 * 96*SIZER + 50)
-        window_size = (rez.width()*SIZER, rez.height()*SIZER)
+        # rez= app.primaryScreen().size()
+        # # window_size = (16 * 96*SIZER*1.1, 9 * 96*SIZER + 50)
+        # window_size = (rez.width()*SIZER, rez.height()*SIZER)
+        # self.setFixedSize(*window_size)
+        window_size = (2000*SIZER, 1000*SIZER)
         self.setFixedSize(*window_size)
 
 if __name__ == '__main__':
