@@ -15,7 +15,7 @@ import a_star as ast
 from log import LogDriver
 
 # SIZER= 1.15, 2, 1
-SIZER= 0.4
+SIZER= 0.45
 OUTPUT_LOG_FILE = "output_log.txt"
 LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
 
@@ -32,42 +32,31 @@ class MainPage(QWidget):
     def __init__(self, canvas, parent=None):
         super().__init__(parent)
         self.ship_container = [[0 for x in range(12)] for y in range(9)]
-
         self.canvas = canvas
-        
-        # Create a vertical layout to hold the widgets
         layout = QVBoxLayout()
         self.setLayout(layout)
-        
-        # Add a label to the layout
         label = QLabel('Welcome, please select a task!')
-        label.setFont(QFont("Arial", 35, QFont.Bold))
+        label.setFont(QFont("Consolas", 35, QFont.Bold))
         label.setAlignment(Qt.AlignCenter)
         layout.addWidget(label)
-
         balance_button = QPushButton('Balance Task')
         balance_button.setFixedSize(300, 100)
-        balance_button.setFont(QFont("Arial", 20, QFont.Bold))
+        balance_button.setFont(QFont("Consolas", 20, QFont.Bold))
         balance_button.clicked.connect(self.start_balance)
         layout.addWidget(balance_button)
-
         transfer_button = QPushButton('Transfer Task')
         transfer_button.setFixedSize(300, 100)
-        transfer_button.setFont(QFont("Arial", 20, QFont.Bold))
+        transfer_button.setFont(QFont("Consolas", 20, QFont.Bold))
         transfer_button.clicked.connect(self.start_transfer)
         layout.addWidget(transfer_button)
-        
-        # Add a button to login
         login_button = QPushButton('Login')
         login_button.setFixedSize(300, 100)
-        login_button.setFont(QFont("Arial", 20, QFont.Bold))
+        login_button.setFont(QFont("Consolas", 20, QFont.Bold))
         login_button.clicked.connect(self.login)
         layout.addWidget(login_button)
-        
-        # Add a button to logout
         logout_button = QPushButton('Logout')
         logout_button.setFixedSize(300, 100)
-        logout_button.setFont(QFont("Arial", 20, QFont.Bold))
+        logout_button.setFont(QFont("Consolas", 20, QFont.Bold))
         logout_button.clicked.connect(self.logout)
         layout.addWidget(logout_button)
 
@@ -235,7 +224,9 @@ class TransferGrid(QWidget):
         loadBtn = QtWidgets.QPushButton("Load Item", self)
         self.loadList= QtWidgets.QListWidget(self)
         loadCol.addWidget(QLabel("Enter Name and Weight of items to be Loaded: "))
-        self.loadPhaseBtn = QtWidgets.QPushButton("Generate Instructions ", self)
+        self.loadPhaseBtn = QtWidgets.QPushButton("Generate Instructions For Loading", self)
+        self.clrBtn = QtWidgets.QPushButton("Clear", self)
+        self.rmBtn = QtWidgets.QPushButton("Remove Item", self)
         loadBtn.clicked.connect(self.loadItem)
         inputSect_L.addWidget(itemLabel)
         inputSect_L.addWidget(self.inputName)
@@ -244,16 +235,22 @@ class TransferGrid(QWidget):
         self.inputWeight.returnPressed.connect(self.loadItem)
         inputSect_L.addWidget(loadBtn)
         loadCol.addLayout(inputSect_L)
+        self.clrBtn.clicked.connect(self.clearList)
+        loadCol.addWidget(self.clrBtn)
+        self.rmBtn.clicked.connect(self.removeRow)
+        inputSect_L.addWidget(self.rmBtn)
         loadCol.addWidget(self.loadList)
         self.loadPhaseBtn.clicked.connect(self.loadPhase)
         loadCol.addWidget(self.loadPhaseBtn)
 
 
-        #[+]:-- unload column reads from the manifest and makes list-----------\\
+
+        #[+]:-- unload column reads from the manifest and makes list----------------\\
         self.maniBtn = QtWidgets.QPushButton("Select Items From Manifest", self)
         self.manifestList= QtWidgets.QListWidget(self)
         self.manifestList.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
         self.unloadBtn = QtWidgets.QPushButton("Generate Instructions for Unloading", self)
+        # self.unloadBtn.setFont(QFont('Consolas', 12))
         self.unloadCol_R.addWidget(QLabel("Select all items to unload: "))
         self.maniBtn.clicked.connect(self.manifest)
         self.unloadCol_R.addWidget(self.maniBtn)
@@ -266,7 +263,7 @@ class TransferGrid(QWidget):
         # self.scrollBox = QtWidgets.QScrollArea(self)
 
 
-        #[+]:-- third colum just for back button------------------------------\\
+        #[+]:-- third(first) colum just for back button------------------------------\\
         self.backBtn = QtWidgets.QPushButton("< Home", self)
         self.backBtn.clicked.connect(self.go_back)
         backCol_L.addWidget(self.backBtn)
@@ -307,6 +304,7 @@ class TransferGrid(QWidget):
                 self.ship_container.reverse()
                 for row in self.ship_container:
                     print(row)
+                self.manifestList.setFont(QFont('Consolas', 11))
             #[+]-- ---------------------------------------------------------------------------------------------------------------------------//
             # Loading the manifest to self.ship_container (Done by Justin)
             # with open(manifest_Path, "r") as file:
@@ -341,9 +339,16 @@ class TransferGrid(QWidget):
                     self.newItems= np.append(self.newItems, newItem, axis=0)
                     # print(str(itemName)+ " --> " + str(self.newItems))
                     # print(str(self.newItems.shape)+ "\n")
-                else: print('Invalid Weight entry')
-            else: print("Invalid Name")
-        else: print("Missing Required Field")
+                else: 
+                    msg= ('ERROR: Invalid Weight entry')
+                    self.popupPrompt(msg)
+            else: 
+                msg= ("ERROR: Invalid Name")
+                self.popupPrompt(msg)
+        else: 
+            msg= ("ERROR: Missing Required Field")
+            self.popupPrompt(msg)
+        self.loadList.setFont(QFont('Consolas', 11))
 
     # This fx should maybe modified to use the A* algo to create the instructions
     def unloadPhase(self):
@@ -390,10 +395,11 @@ class TransferGrid(QWidget):
                          manifest_name = self.manifest_name)
             self.canvas.addWidget(grid)
             self.canvas.setCurrentWidget(grid)
-            
             return self.newItems
         else:
-            print("ERROR: No Items Selected! Load the manifest, and Click on the Items you want to load")
+            msg= ("Warning: No Items Selected! Load the manifest, and Click on all the Items you want to load")
+            self.popupPrompt(msg)
+            
 
             
     def loadPhase(self):
@@ -418,14 +424,14 @@ class TransferGrid(QWidget):
                     move[1] = 9 - move[1] 
                 print("load_PATH: "+ str(path))
         else:
-            print("Warning: You have items to load")
+            msg= ("Warning: You have no items to load")
+            self.popupPrompt(msg)
         
         grid = BlockGrid(parent_canvas = self.canvas, 
             logdriver = LOGDRIVER, 
             input_path = paths, 
             container_status = self.ship_container, 
             manifest_name = self.manifest_name)
-        
         self.canvas.addWidget(grid)
         self.canvas.setCurrentWidget(grid)
             
@@ -433,9 +439,20 @@ class TransferGrid(QWidget):
 
     def go_back(self):
         self.canvas.setCurrentIndex(indexTionary['home'])
-
+    def removeRow(self):
+        item= self.loadList.currentItem()
+        row= self.loadList.row(item)
+        self.loadList.takeItem(row)
+    def clearList(self):
+        self.loadList.clear()
     def thistTooShall(self):
         pass
+    def popupPrompt(self, msg):
+        popupWindow = QtWidgets.QDialog()
+        popupWindow.setWindowTitle("!NOTICE")
+        window = QHBoxLayout()
+        popupWindow.setLayout(window)
+        popupWindow.exec_()
 #-[:+:]===============================Transfer CheckList ==========================================================================================//
 
 
@@ -446,10 +463,10 @@ class LoginPage(QWidget):
         layout = QVBoxLayout()
         text_box = QLineEdit()
         text_box.setFixedSize(1300, 200)
-        text_box.setFont(QFont('Arial', 50))
+        text_box.setFont(QFont('Consolas', 50))
         confirm_login = QPushButton('Log In')
         confirm_login.setMaximumSize(150, 50)
-        confirm_login.setFont(QFont('Arial', 20))
+        confirm_login.setFont(QFont('Consolas', 20))
         confirm_login.clicked.connect(lambda: self.login(text_box.text()))
         layout.addWidget(text_box)
         layout.addWidget(confirm_login)
@@ -468,12 +485,10 @@ class LogoutPage(QWidget):
         layout = QVBoxLayout()
         confirm_logout = QLabel('Log Out Successful')
         confirm_logout.setFixedSize(1500, 500)
-        confirm_logout.setFont(QFont('Arial', 50))
-        
+        confirm_logout.setFont(QFont('Consolas', 50))
         home_button = QPushButton('Go back to home')
-        home_button.setFont(QFont('Arial', 20))
+        home_button.setFont(QFont('Consolas', 20))
         home_button.clicked.connect(self.backhome)
-        
         layout.addWidget(confirm_logout)
         layout.addWidget(home_button)
         self.setLayout(layout)
@@ -489,10 +504,10 @@ class NotBalancePage(QWidget):
         layout = QVBoxLayout()
         message = QLabel('The Manifests is not balanced \nPlease select another manifest')
         message.setFixedSize(1800, 500)
-        message.setFont(QFont('Arial', 50))
+        message.setFont(QFont('Consolas', 50))
         
         home_button = QPushButton('Go back to home')
-        home_button.setFont(QFont('Arial', 20))
+        home_button.setFont(QFont('Consolas', 20))
         home_button.clicked.connect(self.backhome)
         
         layout.addWidget(message)
