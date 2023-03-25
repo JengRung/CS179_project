@@ -20,6 +20,7 @@ LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
 
 indexTionary= {
     'main': 0,
+    'home': 0,
     'login': 1,
     'transfer': 2,
 }
@@ -144,6 +145,7 @@ class TransferGrid(QWidget):
 #     - [+] Generat new Manifest
 #     - [+] UNload phase
 #     - [ ] load phase
+#     - [ ] Fix Login
         
     def __init__(self, canvas, parent=None):
         super().__init__(parent)
@@ -164,8 +166,8 @@ class TransferGrid(QWidget):
         self.unloadCol_R= QVBoxLayout()
         colContainer.addLayout(self.unloadCol_R)
 
-        subCol_R= QVBoxLayout()
-        colContainer.addLayout(subCol_R)
+        backCol_L= QVBoxLayout()
+        colContainer.addLayout(backCol_L)
 
         #[+]:-- load column is for data entry--------------------------\\
         #-----------------------------------\\
@@ -206,6 +208,11 @@ class TransferGrid(QWidget):
         # self.unloadCol_R.addWidget(self.qBtnGroup)
         # self.scrollBox = QtWidgets.QScrollArea(self)
 
+
+        #[+]:-- third colum just for back button------------------------------\\
+        self.subBtn = QtWidgets.QPushButton("< Home", self)
+        self.subBtn.clicked.connect(self.go_back)
+        backCol_L.addWidget(self.subBtn)
         
     
     def manifest(self):
@@ -288,7 +295,7 @@ class TransferGrid(QWidget):
 
     # This fx should maybe modified to use the A* algo to create the instructions
     def unloadPhase(self):
-        if len(self.newItems)+len(self.manifestList.selectedItems())>0:
+        if len(self.manifestList.selectedItems())>0:
             # transfer_list = []
             # for item in self.newItems:
             #     for x in range(len(self.ship_container)-1):
@@ -334,12 +341,14 @@ class TransferGrid(QWidget):
             
             return self.newItems
         else:
-            print("Fields are empty!")
+            print("No Items Selected! Click on the Items you want to load")
             
             # ship = cont.ship(self.ship_container)
             # transfer_list = [[0, 3], [0, 7]]
             # moves = ship.transfer_list_off(transfer_list)
             # print(moves)
+    def go_back(self):
+        self.parent_canvas.setCurrentIndex('home')
 #-[:+:]===============================Transfer CheckList ==========================================================================================//
 
 
