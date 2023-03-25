@@ -55,12 +55,11 @@ for i in range(len(test3)):
         if i == 7 and j == 0: 
             test3[i][j] = cont.container("cat",100)
 
-
-
 #Example of balance
 print("-----balancing------")
-containers = test2
+containers = test1
 ship = cont.ship(containers)
+print(ship.get_worst_case_balance())
 new_ship = ship.balance(ast.search,ast.balance(ship))
 print(ship)
 print(new_ship)

@@ -1,4 +1,5 @@
 import sys
+import copy
 from PySide2.QtWidgets import QApplication, QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget, QStackedWidget, QLineEdit, QPushButton, QRadioButton
 # import PySide2.QtWidgets
 from PySide2 import QtCore, QtGui, QtWidgets
@@ -88,15 +89,17 @@ class MainPage(QWidget):
             print(row)
         
         ship = cont.ship(self.ship_container)
-
         new_ship = ship.balance(ast.search,ast.balance(ship))
         balance_moves = new_ship.moves
 
+        #-------- correct order ---------------------
         paths = []
-        print(balance_moves)
-        for move in balance_moves:
-            paths.append(ship.shortest_path(move))
-        
+        ship_temp = copy.deepcopy(ship)
+        for moves in balance_moves:
+            paths.append(ship_temp.shortest_path(moves))
+            ship_temp.move(moves) #updates ship for next move
+        #--------------------------------------------
+
         # reverse x, y cords
         for path in paths:
             for move in path:

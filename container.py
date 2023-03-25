@@ -56,8 +56,18 @@ class ship():
         self.right_set = self.get_right_set()
         self.moves = moves
 
-    def get_worst_case_balance():
-        return 999
+    def get_worst_case_balance(self):
+        sum = 0
+        dim = len(self.containers)
+        dim2 = len(self.containers[0])
+        for i in range(dim):
+            for j in range(dim2):
+                if (self.is_container(self.containers[i][j])):
+                    if (j < dim2/2):
+                        sum += abs(j - (dim2/2+1))
+                    else:
+                        sum += abs(j - dim2/2)
+        return sum
     
     def get_closest_spot(self):
         #returns x,y of closest open spot using manhattan distance
@@ -105,7 +115,7 @@ class ship():
 
     def balance(self,search,problem):
         try:
-            node,i,j = search(problem,trace = True)
+            node,i,j = search(problem,trace = False)
         except:
             return self
         return node.state
