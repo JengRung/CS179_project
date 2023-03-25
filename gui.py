@@ -84,11 +84,15 @@ class MainPage(QWidget):
                 else:
                     self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = cont.container(container_name, container_weight)
         self.ship_container.reverse()
+        
         for row in self.ship_container:
             print(row)
         
         ship = cont.ship(self.ship_container)
-        balance_moves = ship.balance(ast.search,ast.balance(ship)).moves
+
+        new_ship = ship.balance(ast.search,ast.balance(ship))
+        balance_moves = new_ship.moves
+
         paths = []
         print(balance_moves)
         for move in balance_moves:
@@ -100,8 +104,10 @@ class MainPage(QWidget):
                 move[0], move[1] = move[1], move[0]
                 move[0] = move[0] + 1
                 move[1] = 9 - move[1] 
+                
+        # print("New ship: ", new_ship)
         
-        grid = BlockGrid(self.canvas, LOGDRIVER, paths)
+        grid = BlockGrid(self.canvas, LOGDRIVER, paths, self.ship_container)
         self.canvas.addWidget(grid)
         self.canvas.setCurrentWidget(grid)
         
