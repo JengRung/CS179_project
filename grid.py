@@ -414,7 +414,7 @@ class FinishPage(QWidget):
         self.setLayout(finish_page_layout)
 
         # Add a QLabel to display the finish message
-        if self.transfermode == None:
+        if self.transfermode == False:
             finish_message = QLabel("Task is done! Remember to send the manifest to the ship company.")
         else:    
             finish_message = QLabel("Unload Task is done! Going back to transfer page")
@@ -423,7 +423,7 @@ class FinishPage(QWidget):
         finish_page_layout.addWidget(finish_message)
 
         # Add a QPushButton to go back to the main page
-        if self.transfermode == None:
+        if self.transfermode == False:
             back_button = QPushButton("Back to home page")
         else:
             back_button = QPushButton("Back to transfer page")
@@ -449,7 +449,7 @@ class FinishPage(QWidget):
         output_manifest_name= os.path.join(thisPath, output_manifest_name)
         
         
-        if self.transfermode == None:
+        if self.transfermode == False:
             with open(output_manifest_name, "w") as f:
                 for x in range(len(self.container)-1, -1, -1):
                     for y in range(len(self.container[x])):
