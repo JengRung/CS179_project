@@ -170,6 +170,7 @@ class ship():
         return sum
     
     def transfer_list_off(self,list):
+        breakpoint()
         moves = []
         j = 0
         while(len(list) != 0):
@@ -181,6 +182,7 @@ class ship():
                 if i[0] == self.get_top_container(i[1]) + j:
                     self.move_off(i[0],i[1],moves)
                     list.remove(i)
+                    j = 0
                     break
                 if (i == temp):
                     j = j + 1
