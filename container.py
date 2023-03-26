@@ -170,7 +170,6 @@ class ship():
         return sum
     
     def transfer_list_off(self,list):
-        breakpoint()
         moves = []
         j = 0
         while(len(list) != 0):
