@@ -22,21 +22,38 @@ class sift_problem():
     def get_sift_goal(self):
         ship = self.init_state
         goal_ship = copy.deepcopy(ship)
-        """for i in range(len(goal_ship.containers)):
+        for i in range(len(goal_ship.containers)):
             for j in range(len(goal_ship.containers[0])):
                 if goal_ship.is_container(goal_ship.containers[i][j]):
                     goal_ship.containers[i][j] = 0
-        containers = sorted(list(ship.get_full_set()))
-        print(containers)"""
+        containers = reversed(sorted(list(ship.get_full_set())))
+        l = goal_ship.get_top_free_space(5)
+        r = goal_ship.get_top_free_space(6)
+        l_cord = [l,5]
+        r_cord = [r,6]
+        parity = 0
+        for i in containers:
+            if (parity % 2 == 0):
+                goal_ship.containers[l_cord[0]][l_cord[1]] = i
+                l_cord[1] -= 1
+                if (l_cord[1] < 0 or goal_ship.containers[l_cord[0]][l_cord[1]] == -1):
+                    l_cord[1] = 5
+                    l_cord[0] = goal_ship.get_top_free_space(5)
+            else:
+                goal_ship.containers[r_cord[0]][r_cord[1]] = i
+                r_cord[1] += 1
+                if (r_cord[1] > 11 or goal_ship.containers[r_cord[0]][r_cord[1]] == -1):
+                    r_cord[1] = 6
+                    r_cord[0] = goal_ship.get_top_free_space(6)
+            parity += 1
         return goal_ship
 
-
-
 class node:
-    def __init__(self, state: cont.ship, depth, distance) -> None:
+    def __init__(self, state: cont.ship, depth, distance, goal_state = None) -> None:
         self.state = copy.deepcopy(state)
         self.depth = depth
         self.distance = distance
+        self.end_state = goal_state
 
     def __lt__(self, other):
         if (self.distance + self.depth == other.distance + other.depth):
@@ -54,8 +71,8 @@ def make_que(node: node) -> queue.Queue:
     return Que
 
 #Creates a que node for the given state
-def make_node(state, depth: int, distance: int) -> node:
-    return node(state,depth,distance)
+def make_node(state, depth: int, distance: int, goal_state = None) -> node:
+    return node(state,depth,distance,goal_state)
 
 def expand(node: node):
     ship = copy.deepcopy(node.state)
@@ -88,9 +105,25 @@ def queing_function(nodes: queue.PriorityQueue, children: list[cont.ship], depth
             print(f"The best state to expand with g(n) = {nodes.queue[0].depth} and h(n) = {nodes.queue[0].distance} is \n {np.matrix(nodes.queue[0].state)}\n")
     return nodes
 
+def queing_function_sift(nodes: queue.PriorityQueue, children: list[cont.ship], depth: int, visited_nodes: set, trace, end_state) -> queue.PriorityQueue:
+    for child in children:
+        tuple_state = str(child.containers)
+        if not visited_nodes.__contains__(tuple_state):
+            new_node = node(child,depth+1,child.heuristic_sift(end_state) + child.last_cost)
+            nodes.put(new_node)
+            visited_nodes.add(tuple_state)
+    if trace:
+        if not nodes.qsize() == 0:
+            print(f"The best state to expand with g(n) = {nodes.queue[0].depth} and h(n) = {nodes.queue[0].distance} is \n {np.matrix(nodes.queue[0].state)}\n")
+    return nodes
+
 #Our main search; que's based on the passed in queing function
-def search_(problem: balance,queing_function = queing_function,trace = False):
-    nodes = make_que(make_node(problem.init_state,0,problem.init_state.heuristic()))
+def search_(problem,queing_function = queing_function,trace = False):
+    if type(problem) == sift_problem:
+        nodes = make_que(make_node(problem.init_state,0,problem.init_state.heuristic_sift(problem.end_state),problem.end_state))
+        print("ok")
+    else:
+        nodes = make_que(make_node(problem.init_state,0,problem.init_state.heuristic()))
     i = 0
     visited_nodes = {str(problem.init_state.containers)}
     while not nodes.empty():
@@ -99,11 +132,11 @@ def search_(problem: balance,queing_function = queing_function,trace = False):
         if problem.goal_test(node.state):
             print("A* finished successfully")
             return (node,node.depth,i)
-        nodes = queing_function(nodes,expand(node),node.depth,visited_nodes,trace)
+        nodes = queing_function(nodes,expand(node),node.depth,visited_nodes,trace,problem.end_state)
     raise Exception("Search terminated in failure")
 
 def search(ship, sift = False, queing_function = queing_function,trace = False):
     if(sift):
-        return (search_(sift_problem(ship),trace=True))
+        return (search_(sift_problem(ship),queing_function_sift,trace=True))
     else:
         return (search_(balance(ship),trace=True))
