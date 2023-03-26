@@ -4,30 +4,31 @@ from PySide2.QtGui import QFont
 import os
 from buffer import BufferWindow
 import container as cont
+import copy
 
-SIZER= .45
+SIZER= 1
 fontSIZER= .6
 
-# TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2),(-2,-2)],
-#                 [(3,7),(3,8),(3,9),(3,10),(4,10),(5,10),(6,10),(6,9),(6,8)],
-#                 [(1,5),(1,6),(1,7),(1,8),(1,9),(100,100),(200,100),(300,100),(400,100)],
-#                 [(2,6), (3,6), (4,6), (5,6), (-2,-2), (6,6), (7,6), (8,6), (9,6), (9,7)],
-#                 [(11,3), (10,3), (9,3), (8,3), (7,3), (6,3), (5,3), (5,4), (5,5), (5,6), (5,7), (5,8), (5,9)],
-#                 [(1,5), (2,5), (3,5), (4,5), (5,5), (6,5), (7,5)]]
-
-TESTING_PATH = [[(3,4), (3,3),(3,2), (4,2),(5,2),(6,2),(7,2),(8,2),(-2,-2)],
-                [(3,7),(3,8),(3,9),(3,10),(4,10),(5,10),(6,10),(6,9),(6,8)],
-                [(11,3), (10,3), (9,3), (8,3), (7,3), (6,3), (5,3), (5,4), (5,5), (5,6), (5,7), (5,8), (5,9)]]
-
 class BlockGrid(QWidget):
-    def __init__(self, parent_canvas, logdriver, input_path, container_status, manifest_name, parent=None):
+    def __init__(self, parent_canvas, logdriver, input_path, container_status, manifest_name, transfermode=False, parent=None):
         super().__init__(parent)
         
         self.path = input_path
         self.logdriver = logdriver
         self.container_status = container_status
         self.manifest_name = manifest_name
+        self.transfermode = transfermode
         
+        if self.transfermode:
+            print("Inside transfer mode")
+        
+        # print("Container Status inside grid:")
+        # for row in container_status:
+        #     print(row)
+        
+        print("check input path")
+        for p in input_path:
+            print(p)
         
         self.costs = cost_calculator(self.path)
         
@@ -289,8 +290,11 @@ class BlockGrid(QWidget):
     
     # Switch items in the container status
     def update_container_status_move(self, coord1, coord2):
-        old_coord = coord1
-        new_coord = coord2
+        old_coord = copy.deepcopy(coord1)
+        new_coord = copy.deepcopy(coord2)
+        
+        print("old_coord: ", old_coord)
+        print("new_coord: ", new_coord)
         
         def reverse_coord(coord):
             coord[0] = coord[0] - 1
@@ -300,7 +304,11 @@ class BlockGrid(QWidget):
         reverse_coord(old_coord)
         reverse_coord(new_coord)
         
-        self.container_status[old_coord[0]][old_coord[1]], self.container_status[new_coord[0]][new_coord[1]] = self.container_status[new_coord[0]][new_coord[1]], self.container_status[old_coord[0]][old_coord[1]]
+        if coord2 == [-2, -2]:
+            print("Moving to truck, clear the block")
+            self.container_status[old_coord[0]][old_coord[1]] = 0
+        else:
+            self.container_status[old_coord[0]][old_coord[1]], self.container_status[new_coord[0]][new_coord[1]] = self.container_status[new_coord[0]][new_coord[1]], self.container_status[old_coord[0]][old_coord[1]]
         
     def next_path(self):
         '''
@@ -342,7 +350,7 @@ class BlockGrid(QWidget):
         self.path_index = 0
         
         if self.finish_path == len(self.path):
-            finish_page = FinishPage(self.parent_canvas, self.logdriver, self.manifest_name, self.container_status)
+            finish_page = FinishPage(self.parent_canvas, self.logdriver, self.manifest_name, self.container_status, self.transfermode)
             # Set the finish page as index 5
             self.parent_canvas.insertWidget(5, finish_page)
             self.parent_canvas.setCurrentIndex(5)
@@ -378,11 +386,13 @@ class BlockGrid(QWidget):
         self.comment_box.clear()
 
 class FinishPage(QWidget):
-    def __init__(self, parent_canvas, logdriver, manifest_name, container, parent=None):
+    def __init__(self, parent_canvas, logdriver, manifest_name, container, transfermode, parent=None):
         super().__init__(parent)
         
         self.parent_canvas = parent_canvas
         self.container = container
+        
+        self.transfermode = transfermode
         
         # Create a QVBoxLayout to hold the finish message and a button to go back
         finish_page_layout = QVBoxLayout()
@@ -412,23 +422,29 @@ class FinishPage(QWidget):
         thisPath= os.path.dirname(absPath)
         output_manifest_name= os.path.join(thisPath, output_manifest_name)
         
-        with open(output_manifest_name, "w") as f:
-            for x in range(len(self.container)-1, -1, -1):
-                for y in range(len(self.container[x])):
-                    if type(self.container[x][y]) == cont.container:
-                        print(9-x, y+1, self.container[x][y].name, self.container[x][y].mass)
-                        f.write('[{},{}], {{{:05}}}, {}\n'.format(9-x, y+1, self.container[x][y].mass, self.container[x][y].name))
-                    elif self.container[x][y] == 0:
-                        f.write('[{},{}], {{{:05}}}, {}\n'.format(9-x, y+1, 00000, "UNUSED"))
-                    elif self.container[x][y] == -1:
-                        f.write('[{},{}], {{{:05}}}, {}\n'.format(9-x, y+1, 00000, "NAN"))
+        if self.transfermode == None:
+            with open(output_manifest_name, "w") as f:
+                for x in range(len(self.container)-1, -1, -1):
+                    for y in range(len(self.container[x])):
+                        if type(self.container[x][y]) == cont.container:
+                            print(9-x, y+1, self.container[x][y].name, self.container[x][y].mass)
+                            f.write('[{},{}], {{{:05}}}, {}\n'.format(9-x, y+1, self.container[x][y].mass, self.container[x][y].name))
+                        elif self.container[x][y] == 0:
+                            f.write('[{},{}], {{{:05}}}, {}\n'.format(9-x, y+1, 00000, "UNUSED"))
+                        elif self.container[x][y] == -1:
+                            f.write('[{},{}], {{{:05}}}, {}\n'.format(9-x, y+1, 00000, "NAN"))
         
         # Write to log when finish cycle and generate new manifest
         logdriver.finishCycle(manifest_name)
         
 
     def go_back(self):
-        self.parent_canvas.setCurrentIndex(0)
+        if self.transfermode == False:
+            print("Not in transfer mode, go back to home")
+            self.parent_canvas.setCurrentIndex(0)
+        else:
+            print("In transfer mode, go back to transfer page")
+            self.parent_canvas.setCurrentIndex(2)
 
 '''
 Algor:

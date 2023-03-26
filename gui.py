@@ -15,7 +15,7 @@ import a_star as ast
 from log import LogDriver
 
 # SIZER= 1.15, 2, 1
-SIZER= .45
+SIZER= 1
 fontSIZER= .6
 OUTPUT_LOG_FILE = "output_log.txt"
 LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
@@ -204,6 +204,9 @@ class TransferGrid(QWidget):
         self.unloadItems= np.empty((0,3))
         
         self.ship_container = [[0 for x in range(12)] for y in range(9)]
+        
+        self.ship = None
+
 
         #[::]-- Holds the two columns in a single box:---\\
         #--[[load][unload]]--------------------------\\
@@ -229,7 +232,8 @@ class TransferGrid(QWidget):
         loadBtn = QtWidgets.QPushButton("Load Item", self)
         self.loadList= QtWidgets.QListWidget(self)
         loadCol.addWidget(QLabel("Enter Name and Weight of items to be Loaded: "))
-        self.loadPhaseBtn = QtWidgets.QPushButton("Generate Instructions For Loading + Unloading", self)
+        self.unloadPhaseBtn = QtWidgets.QPushButton("Generate Instructions For Unloading", self)
+        self.loadPhaseBtn = QtWidgets.QPushButton("Generate Instructions For Loading", self)
         self.clrBtn = QtWidgets.QPushButton("Clear", self)
         self.rmBtn = QtWidgets.QPushButton("Remove Item", self)
         loadBtn.clicked.connect(self.loadItem)
@@ -245,7 +249,9 @@ class TransferGrid(QWidget):
         self.rmBtn.clicked.connect(self.removeRow)
         inputSect_L.addWidget(self.rmBtn)
         loadCol.addWidget(self.loadList)
-        self.loadPhaseBtn.clicked.connect(self.multiPhaseTransfer)
+        self.unloadPhaseBtn.clicked.connect(self.unload_transfer)
+        loadCol.addWidget(self.unloadPhaseBtn)
+        self.loadPhaseBtn.clicked.connect(self.load_transfer)
         loadCol.addWidget(self.loadPhaseBtn)
 
 
@@ -287,6 +293,7 @@ class TransferGrid(QWidget):
             # For reading the manifest file for transfer list ui (Done by Richard)
             #[+]-- ---------------------------------------------------------------------------------------------------------------------------\\
             with open(manifest_Path, "r") as file:
+                container_cnt = 0
                 for row in file:
                     itemEntry= row.strip()
                     tmp_Name= itemEntry[16+2:len(itemEntry)]
@@ -306,30 +313,16 @@ class TransferGrid(QWidget):
                         self.manifestList.addItem(unloadStr)
                         #[+]-- Create Ship State based on manifest: 
                         self.ship_container[int(itemXYW[0]) - 1][int(itemXYW[1]) - 1] = cont.container(tmp_Name, itemXYW[2])
+                        container_cnt += 1
                 self.ship_container.reverse()
                 print("\n\n[::] ======= [:START:] ======= [::]")
                 for row in self.ship_container:
                     print(row)
-                self.manifestList.setFont(QFont('Consolas', 11))
-            #[+]-- ---------------------------------------------------------------------------------------------------------------------------//
-            # Loading the manifest to self.ship_container (Done by Justin)
-            # with open(manifest_Path, "r") as file:
-            #     container_pattern = r'(\[.*?\]),\s({.*?}),\s(.*)'
-            #     for row in file:
-            #         items = re.match(container_pattern, row)
-            #         container_index, container_weight, container_name= items.groups()
-            #         container_indexs = container_index.strip('[]').split(',')
-            #         container_weight = int(container_weight.strip('{}'))
-            #         if container_name.upper() == "NAN":
-            #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = -1
-            #         elif container_name.upper() == "UNUSED":
-            #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = 0
-            #         else:
-            #             self.ship_container[int(container_indexs[0]) - 1][int(container_indexs[1]) - 1] = cont.container(container_name, container_weight)
-            #     self.ship_container.reverse()
-            #     for row in self.ship_container:
-            #         print(row)
                     
+                LOGDRIVER.openManifest(self.manifest_name, container_cnt)
+                
+                self.manifestList.setFont(QFont('Consolas', 11))
+
     def loadItem(self):
         # print("list accessed")
         itemName = self.inputName.text()
@@ -361,15 +354,6 @@ class TransferGrid(QWidget):
         print("\n--->UNloadPhase()::")
         paths = []
         if len(self.manifestList.selectedItems())>0:
-            # transfer_list = []
-            # for item in self.newItems:
-            #     for x in range(len(self.ship_container)-1):
-            #         for y in range(len(self.ship_container[x])-1):
-            #             if self.ship_container[x][y] != -1 and self.ship_container[x][y] != 0:
-            #                 if item[0] == self.ship_container[x][y].name:
-            #                     print(self.ship_container[x][y].name, (x, y))                
-            #                     transfer_list.append([x, y])
-            #[+]-- Populate transfer_list with items that the user has selected to UNload fro the ship------\
             transfer_list= []
             print('\nSelected For Unloading: ')
             for item in self.manifestList.selectedItems():
@@ -383,6 +367,12 @@ class TransferGrid(QWidget):
             #-----------------------------------------------------------------------------------------------/
             
             # create a ship from a matrix of containers
+            # print("TESTAAAAA:")
+            # for row in self.ship_container:
+            #     print(row)
+            
+            container_input = copy.deepcopy(self.ship_container)
+            
             ship = cont.ship(self.ship_container)
 
             balance_moves = ship.transfer_list_off(transfer_list)
@@ -396,23 +386,31 @@ class TransferGrid(QWidget):
                     move[0], move[1] = move[1], move[0]
                     move[0] = move[0] + 1
                     move[1] = 9 - move[1] 
-                print("unload_PATH: "+ str(path))
+                # print("unload_PATH: "+ str(path))
 
+            # Add the missing truck grid to the end of each path
+            for path in paths:
+                path.append([-2, -2])
+            
             grid = BlockGrid(parent_canvas = self.canvas, 
                          logdriver = LOGDRIVER, 
                          input_path = paths, 
-                         container_status = self.ship_container, 
-                         manifest_name = self.manifest_name)
+                         container_status = container_input, 
+                         manifest_name = self.manifest_name,
+                         transfermode=True)
+            
             self.canvas.addWidget(grid)
             self.canvas.setCurrentWidget(grid)
-            # return self.newItems
+            
+            # Update self.ship to the moved version, use in the load phase
+            self.ship = ship
+
 
             print("\n\n[::] ======= [:UNLOADED:] ======= [::]")
             for row in ship.containers:
                 print(row)
             print('\n')
 
-            return ship
         else:
             msg= ("Warning: No Items Selected! Load the manifest, and Click on all the Items you want to load")
             self.popupPrompt(msg)
@@ -421,11 +419,9 @@ class TransferGrid(QWidget):
 
             
     def loadPhase(self):
-        # cont.container(container_name, container_weight)
-        ship= self.unloadPhase()
         print("\n--->loadPhase()::")
-        # for row in ship.containers:
-        #     print(row)
+        for row in self.ship.containers:
+            print(row)
         paths= []
         if len(self.newItems)>0:
             # ship = cont.ship(self.ship_container)
@@ -435,7 +431,7 @@ class TransferGrid(QWidget):
                 name= item[0]
                 weight= int(item[1])
                 newBox= cont.container(name, weight)
-                shortestPath= ship.transfer_list_on(newBox)
+                shortestPath= self.ship.transfer_list_on(newBox)
                 print(shortestPath)
                 paths.append(shortestPath)
             for path in paths:
@@ -461,13 +457,13 @@ class TransferGrid(QWidget):
         # for row in ship.containers:
         #     print(row)
         # print("\n")
-        return ship
 
-    def multiPhaseTransfer(self):
-        ship= self.loadPhase()
-        for row in ship.containers:
-            print(row)
-        
+    def unload_transfer(self):
+        self.unloadPhase()            
+    
+    def load_transfer(self):
+        self.loadPhase()
+
     
 
     def go_back(self):
@@ -582,11 +578,6 @@ class Canvas(QWidget):
         layout.addWidget(self.stacked_widget)
         self.setLayout(layout)
 
-
-        # rez= app.primaryScreen().size()
-        # # window_size = (16 * 96*SIZER*1.1, 9 * 96*SIZER + 50)
-        # window_size = (rez.width()*SIZER, rez.height()*SIZER)
-        # self.setFixedSize(*window_size)
         window_size = (2000*SIZER, 1000*SIZER)
         self.setFixedSize(*window_size)
 
