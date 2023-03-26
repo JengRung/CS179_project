@@ -138,15 +138,36 @@ class ship():
                 raise Exception("Critical search failure")
             return node.state
         else:
-            return self.sift(search)
+            return (self.sift(search))
 
     def sift(self,search):
         try:
-            node = search(self,sift = True,trace=True)
+            node,i,j = search(self,sift = True,trace=True)
         except Exception as e:
             print(e,'\n')
             raise Exception("Critical Search Failure")
         return node.state
+    
+    def find_container(self,cont:str):
+        dim = len(self.containers)
+        dim2 = len(self.containers[0])
+        for i in range(dim):
+            for j in range(dim2):
+                if str(self.containers[i][j]) == cont:
+                    return ([i,j])
+
+    
+    def heuristic_sift(self,state):
+        conts = state.containers
+        dim = len(self.containers)
+        dim2 = len(self.containers[0])
+        sum = 0
+        for i in range(dim):
+            for j in range(dim2):
+                if self.is_container(conts[i][j]):
+                    [x,y] = self.find_container(str(conts[i][j]))
+                    sum+=abs(i-x) + abs(y-j)
+        return sum
     
     def transfer_list_off(self,list):
         moves = []
