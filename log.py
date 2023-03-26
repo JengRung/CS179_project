@@ -1,10 +1,17 @@
 from datetime import datetime
+import os
 
 class LogDriver:
     def __init__(self, log_file):
         self.log_file = log_file
         self.user = None
 
+        #[+]--------------------------------------------------\\
+        absPath= os.path.realpath(__file__)
+        thisPath= os.path.dirname(absPath)
+
+        self.log_file= os.path.join(thisPath, log_file)
+    
     def log(self, message):
         with open(self.log_file, 'a') as f:
             f.write(message + '\n')
@@ -42,3 +49,8 @@ class LogDriver:
     def comment(self, comment):
         time = datetime.now().replace(second=0, microsecond=0).strftime("%Y-%m-%d %H:%M")
         self.log(f"{time}  {self.user} comment: {comment}")
+
+    #[+]---
+    def error(self, msg):
+        time = datetime.now().replace(second=0, microsecond=0).strftime("%Y-%m-%d %H:%M")
+        self.log(f"{time}  {self.user} ErrorMessage: {msg}")
