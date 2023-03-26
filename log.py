@@ -28,11 +28,11 @@ class LogDriver:
         
     def offload(self, container):
         time = datetime.now().replace(second=0, microsecond=0).strftime("%Y-%m-%d %H:%M")
-        self.log(f"{time}  {container} is offloaded")
+        self.log(f"{time}  {container} is offloaded to the truck")
         
-    def onload(self, container):
+    def onload(self, container, coord):
         time = datetime.now().replace(second=0, microsecond=0).strftime("%Y-%m-%d %H:%M")
-        self.log(f"{time}  {container} is onloaded")
+        self.log(f"{time}  {container} is onloaded at coordinate {coord}")
         
     def openManifest(self, manifest, container_cnt):
         time = datetime.now().replace(second=0, microsecond=0).strftime("%Y-%m-%d %H:%M")

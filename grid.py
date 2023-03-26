@@ -10,7 +10,7 @@ SIZER= 1
 fontSIZER= .6
 
 class BlockGrid(QWidget):
-    def __init__(self, parent_canvas, logdriver, input_path, container_status, manifest_name, transfermode=False, parent=None):
+    def __init__(self, parent_canvas, logdriver, input_path, container_status, manifest_name, transfermode=False, loading_list = None, parent=None):
         super().__init__(parent)
         
         self.path = input_path
@@ -18,6 +18,19 @@ class BlockGrid(QWidget):
         self.container_status = container_status
         self.manifest_name = manifest_name
         self.transfermode = transfermode
+        
+        self.new_item_cnt = 0
+        
+        if loading_list is not None:
+            self.loading_list = []
+            for item in loading_list:
+                self.loading_list.append(cont.container(item[0], int(item[1])))
+        else:
+            self.loading_list = None
+            
+        print("Input path")
+        for path in input_path:
+            print(path)
         
         if self.transfermode:
             print("Inside transfer mode")
@@ -307,6 +320,9 @@ class BlockGrid(QWidget):
         if coord2 == [-2, -2]:
             print("Moving to truck, clear the block")
             self.container_status[old_coord[0]][old_coord[1]] = 0
+        elif coord1 == [1, 9]:
+            self.container_status[new_coord[0]][new_coord[1]] = self.loading_list[self.new_item_cnt]
+            self.new_item_cnt += 1
         else:
             self.container_status[old_coord[0]][old_coord[1]], self.container_status[new_coord[0]][new_coord[1]] = self.container_status[new_coord[0]][new_coord[1]], self.container_status[old_coord[0]][old_coord[1]]
         
@@ -323,22 +339,21 @@ class BlockGrid(QWidget):
             coord[0], coord[1] = coord[1], coord[0]
         
         
-        if self.path[self.finish_path][-1] == (-2, -2):
+        
+        if self.path[self.finish_path][0] == [1, 9]:
+            end_coord = self.path[self.finish_path][-1].copy()
+            self.logdriver.onload(self.loading_list[self.new_item_cnt].name, end_coord)
+        
+        elif self.path[self.finish_path][-1] == [-2, -2]:
             container_coord = self.path[self.finish_path][0].copy()
             reverse_coord(container_coord)
             self.logdriver.offload(self.container_status[container_coord[0]][container_coord[1]].name)
         
-        elif self.path[self.finish_path][0] == (-2, -2):
-            container_coord = self.path[self.finish_path][-1].copy()
-            reverse_coord(container_coord)
-            self.logdriver.onload(self.container_status[container_coord[0]][container_coord[1]].name)
-        
-        elif self.path[self.finish_path][0] != (-2, -2) and self.path[self.finish_path][-1] != (-2, -2):
+        elif self.path[self.finish_path][0] != [-2, -2] and self.path[self.finish_path][-1] != [-2, -2]:
             container_coord = self.path[self.finish_path][0].copy()
             start_coord = container_coord.copy()
             end_coord = self.path[self.finish_path][-1].copy()
             reverse_coord(container_coord)
-            # self.logdriver.moveInsideShip(self.container_status[container_coord[0]][container_coord[1]].name, start_coord, end_coord)
             self.logdriver.moveInsideShip(self.container_status[container_coord[0]][container_coord[1]], start_coord, end_coord)
         
         # Coordinate for update container status
@@ -399,13 +414,20 @@ class FinishPage(QWidget):
         self.setLayout(finish_page_layout)
 
         # Add a QLabel to display the finish message
-        finish_message = QLabel("Task is done! Remember to send the manifest to the ship company.")
+        if self.transfermode == None:
+            finish_message = QLabel("Task is done! Remember to send the manifest to the ship company.")
+        else:    
+            finish_message = QLabel("Unload Task is done! Going back to transfer page")
+            
         finish_message.setFont(QFont("Consolas", 25*fontSIZER, QFont.Bold))
         finish_page_layout.addWidget(finish_message)
 
         # Add a QPushButton to go back to the main page
-        back_button = QPushButton("Back to home page")
-        back_button.setFixedSize(800, 100)
+        if self.transfermode == None:
+            back_button = QPushButton("Back to home page")
+        else:
+            back_button = QPushButton("Back to transfer page")
+        back_button.setFixedSize(1000, 100)
         back_button.setFont(QFont("Consolas", 20*fontSIZER, QFont.Bold))
         back_button.clicked.connect(self.go_back)
         finish_page_layout.addWidget(back_button)
@@ -425,6 +447,7 @@ class FinishPage(QWidget):
         absPath= os.path.realpath(__file__)
         thisPath= os.path.dirname(absPath)
         output_manifest_name= os.path.join(thisPath, output_manifest_name)
+        
         
         if self.transfermode == None:
             with open(output_manifest_name, "w") as f:
