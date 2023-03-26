@@ -93,7 +93,7 @@ def expand(node: node):
     return children
 
 #Que's the children passed in to the que
-def queing_function(nodes: queue.PriorityQueue, children: list[cont.ship], depth: int, visited_nodes: set, trace) -> queue.PriorityQueue:
+def queing_function(nodes: queue.PriorityQueue, children: list[cont.ship], depth: int, visited_nodes: set, trace, end_state = None) -> queue.PriorityQueue:
     for child in children:
         tuple_state = str(child.containers)
         if not visited_nodes.__contains__(tuple_state):
