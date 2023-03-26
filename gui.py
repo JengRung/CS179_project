@@ -17,7 +17,7 @@ from log import LogDriver
 # SIZER= 1.15, 2, 1
 SIZER= 1
 fontSIZER= .6
-OUTPUT_LOG_FILE = "output_log.txt"
+OUTPUT_LOG_FILE = "KeoghLongBeach2023.txt"
 LOGDRIVER = LogDriver(OUTPUT_LOG_FILE)
 
 indexTionary= {
@@ -390,7 +390,8 @@ class TransferGrid(QWidget):
 
             # Add the missing truck grid to the end of each path
             for path in paths:
-                path.append([-2, -2])
+                if path[-1] == [-1, 11]:
+                    path.append([-2, -2])
             
             grid = BlockGrid(parent_canvas = self.canvas, 
                          logdriver = LOGDRIVER, 
@@ -422,6 +423,8 @@ class TransferGrid(QWidget):
         print("\n--->loadPhase()::")
         for row in self.ship.containers:
             print(row)
+            
+        input_manifest = copy.deepcopy(self.ship.containers)
         paths= []
         if len(self.newItems)>0:
             # ship = cont.ship(self.ship_container)
@@ -445,18 +448,22 @@ class TransferGrid(QWidget):
             self.popupPrompt(msg)
             LOGDRIVER.error(msg)
         print("    ===>Grid::")
+        
+        print("Testing new item")
+        print(self.newItems)
+        
         grid = BlockGrid(parent_canvas = self.canvas, 
             logdriver = LOGDRIVER, 
             input_path = paths, 
-            container_status = self.ship_container, 
-            manifest_name = self.manifest_name)
+            container_status = input_manifest, 
+            manifest_name = self.manifest_name,
+            loading_list = self.newItems)
         self.canvas.addWidget(grid)
         self.canvas.setCurrentWidget(grid)
-
-        print("\n[[:+:] ======= [:Transfer / Load Complete:] ======= [:+:]")
-        # for row in ship.containers:
-        #     print(row)
-        # print("\n")
+        
+        # Clearing data
+        self.ship = None
+        self.ship_container = [[0 for x in range(12)] for y in range(9)]
 
     def unload_transfer(self):
         self.unloadPhase()            
