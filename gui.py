@@ -36,7 +36,7 @@ class MainPage(QWidget):
         self.canvas = canvas
         layout = QVBoxLayout()
         self.setLayout(layout)
-        label = QLabel('Welcome, please select a task!')
+        label = QLabel('Welcome, please select a task! \n Please remember to sign in')
         label.setFont(QFont("Consolas", 35*fontSIZER, QFont.Bold))
         label.setAlignment(Qt.AlignCenter)
         layout.addWidget(label)
@@ -98,27 +98,15 @@ class MainPage(QWidget):
         ship = cont.ship(self.ship_container)
         new_ship = None
 
-
-        new_ship = ship.balance(ast.search,ast.balance(ship))
-        # #Check if balance is possible
-        # if (ship.can_be_balanced() == False):
-        #     # Add something to skip the rest here
-        #     print("Can not be balanced")
-        #     self.canvas.setCurrentIndex(4)
-        #     # Clear ship container
-        #     self.ship_container = [[0 for x in range(12)] for y in range(9)]
-        #     return
-            
-        # else:
-        #     new_ship = ship.balance(ast.search,ast.balance(ship))
-        #     #do stuff here
-
-        if new_ship == None:
-            print("A* Failure, resort to default")
-            #A* Failed for some reason, do the default maritime law algo
-        else:
-            pass
-            #do the balancing GUI stuff here
+        try:
+            new_ship = ship.balance(ast.search)
+        except Exception as e:
+            print(e,' in GUI.py \n')
+            print("A* Failure in GUI")
+            self.canvas.setCurrentIndex(4)
+            # Clear ship container
+            self.ship_container = [[0 for x in range(12)] for y in range(9)]
+            return
 
         #-------- correct order ---------------------
         balance_moves = new_ship.moves
@@ -513,7 +501,7 @@ class NotBalancePage(QWidget):
         super().__init__(parent)
         self.canvas = canvas
         layout = QVBoxLayout()
-        message = QLabel('The Manifests is not balanced \nPlease select another manifest')
+        message = QLabel('ERROR: Search resulted in critical failure due to exception \n Please verify the manifest is correct')
         message.setFixedSize(1800, 500)
         message.setFont(QFont('Consolas', 50*fontSIZER))
         
@@ -567,6 +555,5 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     canvas = Canvas()
     canvas.show()
-
 
     sys.exit(app.exec_())

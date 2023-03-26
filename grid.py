@@ -411,8 +411,8 @@ class FinishPage(QWidget):
         #[+]--Gener------#[+]--------------------------------------\\
         # absPath= os.path.realpath(__file__)
         # thisPath= os.path.dirname(absPath)
-        thisPath= (r"C:\Users\richa\Desktop")
-        output_manifest_name= os.path.join(thisPath, output_manifest_name)
+        #thisPath= (r"C:\Users\richa\Desktop")
+        #output_manifest_name= os.path.join(thisPath, output_manifest_name)
         
         with open(output_manifest_name, "w") as f:
             for x in range(len(self.container)-1, -1, -1):

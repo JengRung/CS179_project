@@ -8,11 +8,29 @@ class balance():
         self.init_state = copy.deepcopy(init_state)
         self.end_state = None
 
-    def set_end_state(self,end_state: cont.ship) -> None:
-        self.end_state = copy.deepcopy(end_state)
-    
     def goal_test(self,state: cont.ship) -> bool:
         return state.is_balanced()
+    
+class sift_problem():
+    def __init__(self, init_state: cont.ship) -> None:
+        self.init_state = copy.deepcopy(init_state)
+        self.end_state = self.get_sift_goal()
+
+    def goal_test(self,state: cont.ship) -> bool:
+        return str(state.containers) == str(self.end_state.containers)
+
+    def get_sift_goal(self):
+        ship = self.init_state
+        goal_ship = copy.deepcopy(ship)
+        """for i in range(len(goal_ship.containers)):
+            for j in range(len(goal_ship.containers[0])):
+                if goal_ship.is_container(goal_ship.containers[i][j]):
+                    goal_ship.containers[i][j] = 0
+        containers = sorted(list(ship.get_full_set()))
+        print(containers)"""
+        return goal_ship
+
+
 
 class node:
     def __init__(self, state: cont.ship, depth, distance) -> None:
@@ -71,7 +89,7 @@ def queing_function(nodes: queue.PriorityQueue, children: list[cont.ship], depth
     return nodes
 
 #Our main search; que's based on the passed in queing function
-def search(problem: balance,queing_function = queing_function,trace = False):
+def search_(problem: balance,queing_function = queing_function,trace = False):
     nodes = make_que(make_node(problem.init_state,0,problem.init_state.heuristic()))
     i = 0
     visited_nodes = {str(problem.init_state.containers)}
@@ -79,6 +97,13 @@ def search(problem: balance,queing_function = queing_function,trace = False):
         i = i + 1
         node = nodes.get()
         if problem.goal_test(node.state):
+            print("A* finished successfully")
             return (node,node.depth,i)
         nodes = queing_function(nodes,expand(node),node.depth,visited_nodes,trace)
     raise Exception("Search terminated in failure")
+
+def search(ship, sift = False, queing_function = queing_function,trace = False):
+    if(sift):
+        return (search_(sift_problem(ship),trace=True))
+    else:
+        return (search_(balance(ship),trace=True))

@@ -1,6 +1,3 @@
-import multiprocessing
-import time
-
 class container:
     def __init__(self, name: str, mass: int, row : int = -1, col : int = -1) -> None:
         self.name = name
@@ -116,6 +113,10 @@ class ship():
                     right.add(self.containers[i][j])
         return right
     
+    def get_full_set(self):
+        l = self.get_left_set()
+        return (l.union(self.get_right_set()))
+    
     def can_be_balanced(self) -> bool:
         set_both = self.get_left_set()
         set_both.union(self.get_right_set())
@@ -128,14 +129,25 @@ class ship():
         else:
             return self._can(containers,lsum + containers[i].mass , rsum ,i+1) or self._can(containers,lsum,rsum+containers[i].mass,i+1)
 
+    def balance(self,search):
+        if (self.can_be_balanced()):
+            try:
+                node,i,j = search(self,trace = True)
+            except Exception as e:
+                print(e,' in container.py \n')
+                raise Exception("Critical search failure")
+            return node.state
+        else:
+            return self.sift(search)
 
-    def balance(self,search,problem):
+    def sift(self,search):
         try:
-            node,i,j = search(problem,trace = True)
-        except:
-            return None
+            node = search(self,sift = True,trace=True)
+        except Exception as e:
+            print(e,'\n')
+            raise Exception("Critical Search Failure")
         return node.state
-
+    
     def transfer_list_off(self,list):
         moves = []
         j = 0
@@ -278,7 +290,7 @@ class ship():
             move_temp = []
             height_max = min(move.x1,move.x2)
             temp = 0
-            for i in range(min(move.y1,move.y2),max(move.y1,move.y2)+1):
+            for i in range(min(move.y1,move.y2)+1,max(move.y1,move.y2)):
                 height_max = min(height_max,self.get_top_free_space(i))
             print("MAX:",height_max)
             for i in range(move.x1,height_max,-1):
